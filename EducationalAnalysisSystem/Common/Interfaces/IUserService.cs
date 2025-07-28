@@ -8,8 +8,10 @@ namespace Common.Interfaces
     [ServiceContract]
     public interface IUserService : IService
     {
-        Task<Guid> RegisterUserAsync(RegisterRequest request);
+        [OperationContract]
+        Task<OperationResult<Guid>> RegisterUserAsync(RegisterRequest request);
 
+        [OperationContract]
         Task<User?> LoginAsync(LoginRequest request);
     }
 }
