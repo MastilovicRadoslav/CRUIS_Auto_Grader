@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<StartupServices xmlns="http://schemas.microsoft.com/2011/01/fabric" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Parameters>
+    <Parameter Name="NotificationService_InstanceCount" Value="-1" />
+    <Parameter Name="RecommendationService_InstanceCount" Value="-1" />
+    <Parameter Name="AdminService_InstanceCount" Value="-1" />
+    <Parameter Name="ProgressService_PartitionCount" Value="1" />
+    <Parameter Name="ProgressService_MinReplicaSetSize" Value="3" />
+    <Parameter Name="ProgressService_TargetReplicaSetSize" Value="3" />
+    <Parameter Name="EvaluationService_InstanceCount" Value="-1" />
+    <Parameter Name="SubmissionService_PartitionCount" Value="1" />
+    <Parameter Name="SubmissionService_MinReplicaSetSize" Value="3" />
+    <Parameter Name="SubmissionService_TargetReplicaSetSize" Value="3" />
+    <Parameter Name="UserService_PartitionCount" Value="1" />
+    <Parameter Name="UserService_MinReplicaSetSize" Value="3" />
+    <Parameter Name="UserService_TargetReplicaSetSize" Value="3" />
+    <Parameter Name="WebApi_InstanceCount" Value="-1" />
+  </Parameters>
+</StartupServices>
