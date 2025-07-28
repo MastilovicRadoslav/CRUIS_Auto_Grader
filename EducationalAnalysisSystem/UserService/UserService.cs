@@ -1,8 +1,10 @@
 ﻿using Common.DTOs;
+using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
 
@@ -14,13 +16,12 @@ namespace UserService
     internal sealed class UserService : StatefulService, IUserService
     {
 
-        public async Task<Guid> RegisterUserAsync(RegisterRequest request)
+        public async Task<OperationResult<Guid>> RegisterUserAsync(RegisterRequest request)
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
             using (var tx = StateManager.CreateTransaction())
             {
-                // Provjeri da li već postoji korisnik sa tim username-om
                 var allUsers = await users.CreateEnumerableAsync(tx);
                 var enumerator = allUsers.GetAsyncEnumerator();
 
@@ -28,23 +29,24 @@ namespace UserService
                 {
                     if (enumerator.Current.Value.Username == request.Username)
                     {
-                        throw new InvalidOperationException("Username already exists.");
+                        return OperationResult<Guid>.Fail("Username already exists.");
                     }
                 }
 
                 var newUser = new User
                 {
                     Username = request.Username,
-                    Password = request.Password, // za sad plain tekst
+                    Password = PasswordHasher.Hash(request.Password),
                     Role = request.Role
                 };
 
                 await users.AddAsync(tx, newUser.Id, newUser);
                 await tx.CommitAsync();
 
-                return newUser.Id;
+                return OperationResult<Guid>.Ok(newUser.Id);
             }
         }
+
 
 
         public UserService(StatefulServiceContext context)
@@ -59,9 +61,9 @@ namespace UserService
         /// </remarks>
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
-        {
-            return new ServiceReplicaListener[0];
-        }
+            => this.CreateServiceRemotingReplicaListeners();
+
+
 
         /// <summary>
         /// This is the main entry point for your service replica.
@@ -109,7 +111,9 @@ namespace UserService
                 while (await enumerator.MoveNextAsync(CancellationToken.None))
                 {
                     var user = enumerator.Current.Value;
-                    if (user.Username == request.Username && user.Password == request.Password)
+                    var hashed = PasswordHasher.Hash(request.Password);
+
+                    if (user.Username == request.Username && user.Password == hashed)
                     {
                         return user;
                     }
