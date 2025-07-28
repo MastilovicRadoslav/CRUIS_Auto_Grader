@@ -3,6 +3,7 @@ using Common.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
+using WebApi.Helpers;
 
 namespace WebApi.Controllers
 {
@@ -11,25 +12,31 @@ namespace WebApi.Controllers
     public class UsersController : ControllerBase
     {
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            // Pravljenje proxy-ja ka UserService-u (stateful)
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
-                new ServicePartitionKey(0) // za sada samo jedna partija
+                new ServicePartitionKey(0)
             );
 
-            var userId = await userService.RegisterUserAsync(request);
+            var result = await userService.RegisterUserAsync(request);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { error = result.Error });
+            }
 
             return Ok(new RegisterResponse
             {
-                UserId = userId,
+                UserId = result.Data,
                 Message = "User registered successfully."
             });
         }
 
+
+
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -43,12 +50,15 @@ namespace WebApi.Controllers
                 return Unauthorized("Invalid credentials.");
             }
 
-            return Ok(new LoginResponse
+            return Ok(new
             {
+                Token = JwtTokenGenerator.GenerateToken(user.Id, user.Role),
                 UserId = user.Id,
                 Role = user.Role,
                 Message = "Login successful."
             });
+
         }
+
     }
 }
