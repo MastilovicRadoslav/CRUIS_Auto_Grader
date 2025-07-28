@@ -1,7 +1,9 @@
-﻿using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
+﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
+using System.Text;
 
 namespace WebApi
 {
@@ -29,9 +31,28 @@ namespace WebApi
 
                         builder.Services.AddSingleton<StatelessServiceContext>(serviceContext);
 
+                        builder.Services.AddAuthentication("Bearer")
+                        .AddJwtBearer("Bearer", options =>
+                        {
+                            options.TokenValidationParameters = new TokenValidationParameters
+                            {
+                                ValidateIssuer = true,
+                                ValidateAudience = true,
+                                ValidateLifetime = true,
+                                ValidateIssuerSigningKey = true,
+                                ValidIssuer = "EducationalSystem",
+                                ValidAudience = "EducationalSystemAudience",
+                                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your_super_secret_key_1234567890abcd"))
+                            };
+                        });
+
                         // Dodaj potrebne servise
                         builder.Services.AddCors();
-                        builder.Services.AddControllers();
+                        builder.Services.AddControllers()
+                            .AddJsonOptions(options =>
+                            {
+                                options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                            });
                         builder.Services.AddEndpointsApiExplorer();
                         builder.Services.AddSwaggerGen();
 
@@ -56,6 +77,8 @@ namespace WebApi
                                   .AllowAnyHeader()
                                   .AllowAnyMethod());
 
+
+                        app.UseAuthentication();
                         app.UseAuthorization();
                         app.MapControllers();
 
