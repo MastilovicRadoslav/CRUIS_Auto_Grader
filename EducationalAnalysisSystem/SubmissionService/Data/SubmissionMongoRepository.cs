@@ -1,4 +1,5 @@
 ﻿using Common.Configurations;
+using Common.Enums;
 using Common.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -25,6 +26,14 @@ public class SubmissionMongoRepository
     public async Task<List<SubmittedWork>> GetAllAsync()
     {
         return await _collection.Find(_ => true).ToListAsync();
+    }
+
+    public async Task UpdateStatusByIdAsync(Guid id, WorkStatus newStatus)
+    {
+        var filter = Builders<SubmittedWork>.Filter.Eq(w => w.Id, id);
+        var update = Builders<SubmittedWork>.Update.Set(w => w.Status, newStatus);
+
+        await _collection.UpdateOneAsync(filter, update);
     }
 
 
