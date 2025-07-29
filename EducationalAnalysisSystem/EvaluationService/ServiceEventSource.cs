@@ -1,5 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Fabric;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.ServiceFabric.Services.Runtime;
 
 namespace EvaluationService
 {
@@ -42,7 +48,7 @@ namespace EvaluationService
         }
 
         private const int MessageEventId = 1;
-        [Event(MessageEventId, Level = EventLevel.Informational, Message = "{0}")]
+        [Event(MessageEventId, Level = EventLevel.Informational, Message="{0}")]
         public void Message(string message)
         {
             if (this.IsEnabled())
@@ -52,7 +58,7 @@ namespace EvaluationService
         }
 
         [NonEvent]
-        public void ServiceMessage(StatelessServiceContext serviceContext, string message, params object[] args)
+        public void ServiceMessage(StatefulServiceContext serviceContext, string message, params object[] args)
         {
             if (this.IsEnabled())
             {
@@ -60,7 +66,7 @@ namespace EvaluationService
                 ServiceMessage(
                     serviceContext.ServiceName.ToString(),
                     serviceContext.ServiceTypeName,
-                    serviceContext.InstanceId,
+                    serviceContext.ReplicaId,
                     serviceContext.PartitionId,
                     serviceContext.CodePackageActivationContext.ApplicationName,
                     serviceContext.CodePackageActivationContext.ApplicationTypeName,
@@ -73,17 +79,17 @@ namespace EvaluationService
         // This results in more efficient parameter handling, but requires explicit allocation of EventData structure and unsafe code.
         // To enable this code path, define UNSAFE conditional compilation symbol and turn on unsafe code support in project properties.
         private const int ServiceMessageEventId = 2;
-        [Event(ServiceMessageEventId, Level = EventLevel.Informational, Message = "{7}")]
+        [Event(ServiceMessageEventId, Level=EventLevel.Informational, Message="{7}")]
         private
 #if UNSAFE
         unsafe
 #endif
-            void ServiceMessage(
-            string serviceName,
-            string serviceTypeName,
+        void ServiceMessage(
+            string serviceName, 
+            string serviceTypeName, 
             long replicaOrInstanceId,
-            Guid partitionId,
-            string applicationName,
+            Guid partitionId, 
+            string applicationName, 
             string applicationTypeName,
             string nodeName,
             string message)
