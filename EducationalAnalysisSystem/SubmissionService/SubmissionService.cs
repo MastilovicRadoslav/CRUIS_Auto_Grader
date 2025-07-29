@@ -1,5 +1,12 @@
+using Common.Configurations;
+using Common.DTOs;
+using Common.Enums;
+using Common.Helpers;
+using Common.Interfaces;
+using Common.Models;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
 
@@ -8,11 +15,99 @@ namespace SubmissionService
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>
-    internal sealed class SubmissionService : StatefulService
+    internal sealed class SubmissionService : StatefulService, ISubmissionService
     {
-        public SubmissionService(StatefulServiceContext context)
-            : base(context)
-        { }
+        private readonly SubmissionMongoRepository _mongoRepo;
+
+        public SubmissionService(StatefulServiceContext context) : base(context)
+        {
+            var settings = new UserDbSettings
+            {
+                ConnectionString = "mongodb://localhost:27017",
+                DatabaseName = "EducationalSystemDb",
+                CollectionName = "Submissions" 
+
+            };
+
+            _mongoRepo = new SubmissionMongoRepository(settings);
+        }
+
+        public async Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkRequest request)
+        {
+            var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+
+            var newSubmission = new SubmittedWork
+            {
+                Id = Guid.NewGuid(),
+                StudentId = request.StudentId,
+                Title = request.Title,
+                Content = request.Content,
+                SubmittedAt = DateTime.UtcNow,
+                Status = WorkStatus.Pending
+            };
+
+            try
+            {
+                // 1. Upis u MongoDB
+                await _mongoRepo.InsertAsync(newSubmission);
+
+                // 2. Upis u ReliableDictionary
+                using (var tx = StateManager.CreateTransaction())
+                {
+                    await submissions.AddAsync(tx, newSubmission.Id, newSubmission);
+                    await tx.CommitAsync();
+                }
+
+                return OperationResult<Guid>.Ok(newSubmission.Id);
+            }
+            catch (Exception ex)
+            {
+                // Opcionalno: rollback iz Mongo ako je dodato, a SF nije uspio
+                await _mongoRepo.DeleteByIdAsync(newSubmission.Id); // ako implementiraš
+                return OperationResult<Guid>.Fail("Error saving submission: " + ex.Message);
+            }
+        }
+
+
+        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId)
+        {
+            var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+            var result = new List<SubmittedWork>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await submissions.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    if (enumerator.Current.Value.StudentId == studentId)
+                    {
+                        result.Add(enumerator.Current.Value);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private async Task LoadSubmissionsAsync()
+        {
+            var submissionsDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var allFromMongo = await _mongoRepo.GetAllAsync(); 
+
+                foreach (var submission in allFromMongo)
+                {
+                    await submissionsDict.AddOrUpdateAsync(tx, submission.Id, submission, (key, oldValue) => submission);
+                }
+
+                await tx.CommitAsync();
+            }
+        }
+
 
         /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
@@ -22,9 +117,7 @@ namespace SubmissionService
         /// </remarks>
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
-        {
-            return new ServiceReplicaListener[0];
-        }
+            => this.CreateServiceRemotingReplicaListeners();
 
         /// <summary>
         /// This is the main entry point for your service replica.
@@ -37,6 +130,8 @@ namespace SubmissionService
             //       or remove this RunAsync override if it's not needed in your service.
 
             var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
+
+            await LoadSubmissionsAsync();
 
             while (true)
             {
