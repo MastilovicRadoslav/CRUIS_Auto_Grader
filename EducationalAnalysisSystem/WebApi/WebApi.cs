@@ -48,6 +48,8 @@ namespace WebApi
 
                         // Dodaj potrebne servise
                         builder.Services.AddCors();
+
+                        // Zbog enum, da radi samo kad se salje tacno Admin, Student..
                         builder.Services.AddControllers()
                             .AddJsonOptions(options =>
                             {
