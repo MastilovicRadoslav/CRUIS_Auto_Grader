@@ -1,0 +1,66 @@
+﻿using Common.Configurations;
+using Common.DTOs;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Driver;
+
+namespace EvaluationService.Data
+{
+    public class FeedbackMongoRepository
+    {
+        private readonly IMongoCollection<FeedbackDto> _collection;
+
+        public FeedbackMongoRepository(UserDbSettings settings)
+        {
+            // Registruje serializer za GUID kako bi se ispravno čuvali u MongoDB-u kao standardni UUID
+            BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.GuidRepresentation.Standard));
+
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
+
+            _collection = database.GetCollection<FeedbackDto>("Feedbacks");
+        }
+
+        /// <summary>
+        /// Ubacuje novi feedback dokument u kolekciju.
+        /// </summary>
+        public async Task InsertAsync(FeedbackDto feedback)
+        {
+            await _collection.InsertOneAsync(feedback);
+        }
+
+        /// <summary>
+        /// Vraća sve feedback dokumente iz kolekcije.
+        /// </summary>
+        public async Task<List<FeedbackDto>> GetAllAsync()
+        {
+            return await _collection.Find(_ => true).ToListAsync();
+        }
+
+        /// <summary>
+        /// Vraća sve feedback dokumente za određenog studenta.
+        /// </summary>
+        public async Task<List<FeedbackDto>> GetFeedbacksByStudentIdAsync(Guid studentId)
+        {
+            var filter = Builders<FeedbackDto>.Filter.Eq(f => f.StudentId, studentId);
+            return await _collection.Find(filter).ToListAsync();
+        }
+
+        /// <summary>
+        /// Briše sve feedback-ove (korisno za testiranje ili reset).
+        /// </summary>
+        public async Task DeleteAllAsync()
+        {
+            await _collection.DeleteManyAsync(_ => true);
+        }
+
+        /// <summary>
+        /// Ažurira jedan feedback dokument (po Id-u).
+        /// </summary>
+        public async Task UpdateAsync(Guid id, FeedbackDto updatedFeedback)
+        {
+            var filter = Builders<FeedbackDto>.Filter.Eq(f => f.WorkId, id);
+            await _collection.ReplaceOneAsync(filter, updatedFeedback);
+        }
+    }
+}
