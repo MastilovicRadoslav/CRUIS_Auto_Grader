@@ -1,4 +1,5 @@
-﻿using Common.DTOs;
+﻿using Common.Configurations;
+using Common.DTOs;
 using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
@@ -7,6 +8,7 @@ using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
+using UserService.Data;
 
 namespace UserService
 {
@@ -15,6 +17,19 @@ namespace UserService
     /// </summary>
     internal sealed class UserService : StatefulService, IUserService
     {
+        private readonly UserMongoRepository _mongoRepo;
+
+        public UserService(StatefulServiceContext context) : base(context)
+        {
+            var settings = new UserDbSettings
+            {
+                ConnectionString = "mongodb://localhost:27017",
+                DatabaseName = "EducationalSystemDb",
+                CollectionName = "Users"
+            };
+
+            _mongoRepo = new UserMongoRepository(settings);
+        }
 
         public async Task<OperationResult<Guid>> RegisterUserAsync(RegisterRequest request)
         {
@@ -40,6 +55,9 @@ namespace UserService
                     Role = request.Role
                 };
 
+                await _mongoRepo.InsertUserAsync(newUser);
+
+
                 await users.AddAsync(tx, newUser.Id, newUser);
                 await tx.CommitAsync();
 
@@ -47,11 +65,24 @@ namespace UserService
             }
         }
 
+        private async Task LoadUsersAsync()
+        {
+            var usersDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var allFromMongo = await _mongoRepo.GetAllUsersAsync();
+
+                foreach (var user in allFromMongo)
+                {
+                    await usersDict.AddOrUpdateAsync(tx, user.Id, user, (key, oldValue) => user);
+                }
+
+                await tx.CommitAsync();
+            }
+        }
 
 
-        public UserService(StatefulServiceContext context)
-            : base(context)
-        { }
 
         /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
@@ -76,6 +107,8 @@ namespace UserService
             //       or remove this RunAsync override if it's not needed in your service.
 
             var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
+
+            await LoadUsersAsync(); // učitavanje korisnika iz Mongo u ReliableDictionary
 
             while (true)
             {
