@@ -1,11 +1,12 @@
-using Common.Configurations;
+﻿using Common.Configurations;
 using Common.DTOs;
 using Common.Enums;
-using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
 using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
@@ -21,15 +22,14 @@ namespace SubmissionService
 
         public SubmissionService(StatefulServiceContext context) : base(context)
         {
-            var settings = new UserDbSettings
+            var submissionSettings = new UserDbSettings
             {
                 ConnectionString = "mongodb://localhost:27017",
                 DatabaseName = "EducationalSystemDb",
-                CollectionName = "Submissions" 
-
+                CollectionName = "Submissions"
             };
 
-            _mongoRepo = new SubmissionMongoRepository(settings);
+            _mongoRepo = new SubmissionMongoRepository(submissionSettings);
         }
 
         public async Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkRequest request)
@@ -48,13 +48,34 @@ namespace SubmissionService
 
             try
             {
-                // 1. Upis u MongoDB
+                // 1. Upis rada u Mongo
                 await _mongoRepo.InsertAsync(newSubmission);
 
-                // 2. Upis u ReliableDictionary
+                // 2. Upis rada u ReliableDictionary
                 using (var tx = StateManager.CreateTransaction())
                 {
                     await submissions.AddAsync(tx, newSubmission.Id, newSubmission);
+                    await tx.CommitAsync();
+                }
+
+                // 3. Evaluacija
+                var evaluationService = ServiceProxy.Create<IEvaluationService>(
+                    new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+                    new ServicePartitionKey(0)
+                );
+
+                var feedback = await evaluationService.EvaluateAsync(newSubmission);
+
+                // 4. Promjena statusa i ažuriranje u Mongo + ReliableDictionary
+                newSubmission.Status = WorkStatus.Completed;
+
+                // Update u Mongo (moraš imati metodu UpdateStatusByIdAsync)
+                await _mongoRepo.UpdateStatusByIdAsync(newSubmission.Id, WorkStatus.Completed);
+
+                // Update u ReliableDictionary
+                using (var tx = StateManager.CreateTransaction())
+                {
+                    await submissions.SetAsync(tx, newSubmission.Id, newSubmission);
                     await tx.CommitAsync();
                 }
 
@@ -62,11 +83,12 @@ namespace SubmissionService
             }
             catch (Exception ex)
             {
-                // Opcionalno: rollback iz Mongo ako je dodato, a SF nije uspio
-                await _mongoRepo.DeleteByIdAsync(newSubmission.Id); // ako implementira�
+                await _mongoRepo.DeleteByIdAsync(newSubmission.Id); // ako postoji ta metoda
                 return OperationResult<Guid>.Fail("Error saving submission: " + ex.Message);
             }
         }
+
+
 
 
         public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId)
@@ -97,7 +119,7 @@ namespace SubmissionService
 
             using (var tx = StateManager.CreateTransaction())
             {
-                var allFromMongo = await _mongoRepo.GetAllAsync(); 
+                var allFromMongo = await _mongoRepo.GetAllAsync();
 
                 foreach (var submission in allFromMongo)
                 {
