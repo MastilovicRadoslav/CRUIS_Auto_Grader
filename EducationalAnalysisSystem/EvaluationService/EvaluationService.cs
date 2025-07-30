@@ -40,7 +40,8 @@ namespace EvaluationService
                 Grade = 85,
                 Issues = new List<string> { "No major issues detected." },
                 Suggestions = new List<string> { "Consider expanding the conclusion." },
-                Summary = "Basic evaluation completed successfully."
+                Summary = "Basic evaluation completed successfully.",
+                EvaluatedAt = DateTime.UtcNow
             };
 
             try
@@ -244,6 +245,91 @@ namespace EvaluationService
             return result;
         }
 
+        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+            var result = new EvaluationStatisticsDto();
+
+            var allGrades = new List<int>();
+            var issueCounter = new Dictionary<string, int>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await dict.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    var feedback = enumerator.Current.Value;
+
+                    if (feedback.StudentId != studentId)
+                        continue;
+
+                    var grade = feedback.Grade;
+                    allGrades.Add(grade);
+
+                    if (grade >= 90) result.Above90++;
+                    else if (grade >= 70) result.Between70And89++;
+                    else result.Below70++;
+
+                    foreach (var issue in feedback.Issues ?? new List<string>())
+                    {
+                        if (issueCounter.ContainsKey(issue))
+                            issueCounter[issue]++;
+                        else
+                            issueCounter[issue] = 1;
+                    }
+                }
+            }
+
+            result.TotalWorks = allGrades.Count;
+            result.AverageGrade = allGrades.Any() ? allGrades.Average() : 0;
+            result.MostCommonIssues = issueCounter;
+
+            return result;
+        }
+
+        public async Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+            var result = new EvaluationStatisticsDto();
+            var grades = new List<int>();
+            var issues = new Dictionary<string, int>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await dict.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    var feedback = enumerator.Current.Value;
+
+                    // Ako si već dodao EvaluatedAt u FeedbackDto, onda:
+                    if (feedback.EvaluatedAt >= request.From && feedback.EvaluatedAt <= request.To)
+                    {
+                        var grade = feedback.Grade;
+                        grades.Add(grade);
+
+                        if (grade >= 90) result.Above90++;
+                        else if (grade >= 70) result.Between70And89++;
+                        else result.Below70++;
+
+                        foreach (var issue in feedback.Issues ?? new List<string>())
+                        {
+                            if (issues.ContainsKey(issue)) issues[issue]++;
+                            else issues[issue] = 1;
+                        }
+                    }
+                }
+            }
+
+            result.TotalWorks = grades.Count;
+            result.AverageGrade = grades.Any() ? grades.Average() : 0;
+            result.MostCommonIssues = issues;
+
+            return result;
+        }
 
     }
 }

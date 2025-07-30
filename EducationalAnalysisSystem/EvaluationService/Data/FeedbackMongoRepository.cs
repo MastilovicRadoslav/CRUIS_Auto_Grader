@@ -1,12 +1,13 @@
 ﻿using Common.Configurations;
 using Common.DTOs;
+using Common.Repositories;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 
 namespace EvaluationService.Data
 {
-    public class FeedbackMongoRepository
+    public class FeedbackMongoRepository : IFeedbackRepository
     {
         private readonly IMongoCollection<FeedbackDto> _collection;
 
