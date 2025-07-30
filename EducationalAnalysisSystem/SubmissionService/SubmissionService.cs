@@ -137,6 +137,16 @@ namespace SubmissionService
 
             using (var tx = StateManager.CreateTransaction())
             {
+                // Prvo obriši sve postojeće zapise u ReliableDictionary
+                var allKeys = await submissionsDict.CreateEnumerableAsync(tx, EnumerationMode.Unordered);
+                var enumerator = allKeys.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    await submissionsDict.TryRemoveAsync(tx, enumerator.Current.Key);
+                }
+
+                // Zatim učitaj sve iz Mongo i upiši u ReliableDictionary
                 var allFromMongo = await _mongoRepo.GetAllAsync();
 
                 foreach (var submission in allFromMongo)
@@ -147,6 +157,7 @@ namespace SubmissionService
                 await tx.CommitAsync();
             }
         }
+
 
 
         /// <summary>
@@ -194,5 +205,30 @@ namespace SubmissionService
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
+
+
+        public async Task<List<SubmittedWork>> GetSubmissionsByStatusAsync(WorkStatus status)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+            var result = new List<SubmittedWork>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await dict.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    var work = enumerator.Current.Value;
+                    if (work.Status == status)
+                    {
+                        result.Add(work);
+                    }
+                }
+            }
+
+            return result;
+        }
+
     }
 }

@@ -1,11 +1,12 @@
 ﻿using Common.Configurations;
 using Common.Enums;
 using Common.Models;
+using Common.Repositories;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
-public class SubmissionMongoRepository
+public class SubmissionMongoRepository : ISubmissionRepository
 {
     private readonly IMongoCollection<SubmittedWork> _collection;
 
@@ -43,5 +44,14 @@ public class SubmissionMongoRepository
     }
 
     public async Task<List<SubmittedWork>> GetByStudentIdAsync(Guid studentId)
-        => await _collection.Find(w => w.StudentId == studentId).ToListAsync();
+    {
+        // Pronalazi sve radove koje je poslao student sa datim ID-jem
+        var filter = Builders<SubmittedWork>.Filter.Eq(w => w.StudentId, studentId);
+
+        // Vraća listu radova iz Mongo kolekcije
+        var result = await _collection.Find(filter).ToListAsync();
+
+        return result;
+    }
+
 }
