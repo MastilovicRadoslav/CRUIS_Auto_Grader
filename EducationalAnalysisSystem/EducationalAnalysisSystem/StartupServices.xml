@@ -6,7 +6,6 @@
     <Parameter Name="EvaluationService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="NotificationService_InstanceCount" DefaultValue="-1" />
     <Parameter Name="RecommendationService_InstanceCount" DefaultValue="-1" />
-    <Parameter Name="AdminService_InstanceCount" DefaultValue="-1" />
     <Parameter Name="ProgressService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="ProgressService_PartitionCount" DefaultValue="1" />
     <Parameter Name="ProgressService_TargetReplicaSetSize" DefaultValue="3" />
@@ -36,11 +35,6 @@
     </Service>
     <Service Name="RecommendationService" ServicePackageActivationMode="ExclusiveProcess">
       <StatelessService ServiceTypeName="RecommendationServiceType" InstanceCount="[RecommendationService_InstanceCount]">
-        <SingletonPartition />
-      </StatelessService>
-    </Service>
-    <Service Name="AdminService" ServicePackageActivationMode="ExclusiveProcess">
-      <StatelessService ServiceTypeName="AdminServiceType" InstanceCount="[AdminService_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
     </Service>

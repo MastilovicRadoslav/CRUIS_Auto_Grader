@@ -36,7 +36,6 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AdminService\AdminService.csproj" />
     <ProjectReference Include="..\EvaluationService\EvaluationService.csproj" />
     <ProjectReference Include="..\NotificationService\NotificationService.csproj" />
     <ProjectReference Include="..\ProgressService\ProgressService.csproj" />

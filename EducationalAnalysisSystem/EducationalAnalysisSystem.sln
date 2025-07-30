@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubmissionService", "Submis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgressService", "ProgressService\ProgressService.csproj", "{53AB8F5E-7FE1-4067-9215-28C2D718CB08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminService", "AdminService\AdminService.csproj", "{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecommendationService", "RecommendationService\RecommendationService.csproj", "{5AA3489B-ECD4-4737-A9B3-7D27A3E8FC31}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService", "NotificationService\NotificationService.csproj", "{3D13B1F8-0DC3-4D13-94E7-A7E44D296AE9}"
@@ -83,14 +81,6 @@ Global
 		{53AB8F5E-7FE1-4067-9215-28C2D718CB08}.Release|Any CPU.Build.0 = Release|Any CPU
 		{53AB8F5E-7FE1-4067-9215-28C2D718CB08}.Release|x64.ActiveCfg = Release|Any CPU
 		{53AB8F5E-7FE1-4067-9215-28C2D718CB08}.Release|x64.Build.0 = Release|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Debug|x64.Build.0 = Debug|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Release|x64.ActiveCfg = Release|Any CPU
-		{E3EDC9E5-3639-4E92-9C40-1DF081868D2C}.Release|x64.Build.0 = Release|Any CPU
 		{5AA3489B-ECD4-4737-A9B3-7D27A3E8FC31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5AA3489B-ECD4-4737-A9B3-7D27A3E8FC31}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AA3489B-ECD4-4737-A9B3-7D27A3E8FC31}.Debug|x64.ActiveCfg = Debug|Any CPU
