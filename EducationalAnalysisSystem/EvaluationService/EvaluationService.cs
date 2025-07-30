@@ -66,6 +66,27 @@ namespace EvaluationService
             }
         }
 
+        public async Task<bool> AddProfessorCommentAsync(AddProfessorCommentRequest request)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await dict.TryGetValueAsync(tx, request.WorkId);
+                if (!result.HasValue)
+                    return false;
+
+                var feedback = result.Value;
+                feedback.ProfessorComment = request.Comment;
+
+                await dict.SetAsync(tx, request.WorkId, feedback);
+                await tx.CommitAsync();
+
+                await _feedbackRepo.UpdateAsync(request.WorkId, feedback);
+                return true;
+            }
+        }
+
         private async Task LoadFeedbacksAsync()
         {
             var feedbackDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
@@ -152,6 +173,77 @@ namespace EvaluationService
 
             return result;
         }
+
+        public async Task<FeedbackDto?> GetFeedbackByWorkIdAsync(Guid workId)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await dict.TryGetValueAsync(tx, workId);
+                return result.HasValue ? result.Value : null;
+            }
+        }
+
+        public async Task<List<FeedbackDto>> GetAllFeedbacksAsync()
+        {
+            var feedbacks = new List<FeedbackDto>();
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await dict.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    feedbacks.Add(enumerator.Current.Value);
+                }
+            }
+
+            return feedbacks;
+        }
+
+        public async Task<EvaluationStatisticsDto> GetStatisticsAsync()
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+            var result = new EvaluationStatisticsDto();
+
+            var allGrades = new List<int>();
+            var issueCounter = new Dictionary<string, int>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await dict.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    var feedback = enumerator.Current.Value;
+                    var grade = feedback.Grade;
+                    allGrades.Add(grade);
+
+                    if (grade >= 90) result.Above90++;
+                    else if (grade >= 70) result.Between70And89++;
+                    else result.Below70++;
+
+                    foreach (var issue in feedback.Issues ?? new List<string>())
+                    {
+                        if (issueCounter.ContainsKey(issue))
+                            issueCounter[issue]++;
+                        else
+                            issueCounter[issue] = 1;
+                    }
+                }
+            }
+
+            result.TotalWorks = allGrades.Count;
+            result.AverageGrade = allGrades.Any() ? allGrades.Average() : 0;
+            result.MostCommonIssues = issueCounter;
+
+            return result;
+        }
+
 
     }
 }
