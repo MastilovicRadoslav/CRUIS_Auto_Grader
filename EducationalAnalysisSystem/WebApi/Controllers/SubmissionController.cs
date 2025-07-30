@@ -1,9 +1,11 @@
 ﻿using Common.DTOs;
+using Common.Enums;
 using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
+using WebApi.Helpers;
 
 
 namespace WebApi.Controllers
@@ -13,6 +15,7 @@ namespace WebApi.Controllers
     public class SubmissionController : ControllerBase
     {
         [Authorize]
+        [AuthorizeRole("Student")]
         [HttpPost("submit")]
         public async Task<IActionResult> SubmitWork([FromBody] SubmitWorkRequest request)
         {
@@ -37,6 +40,28 @@ namespace WebApi.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole("Student")]
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyWorks()
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdStr))
+                return Unauthorized();
+
+            var studentId = Guid.Parse(userIdStr);
+
+            var submissionService = ServiceProxy.Create<ISubmissionService>(
+                new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
+                new ServicePartitionKey(0)
+            );
+
+            var works = await submissionService.GetWorksByStudentIdAsync(studentId);
+            return Ok(works);
+        }
+
+        [Authorize]
+        [AuthorizeRole("Professor")]
         [HttpGet("student/{studentId}")]
         public async Task<IActionResult> GetWorksByStudentId(Guid studentId)
         {
@@ -50,6 +75,7 @@ namespace WebApi.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole("Professor")]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllSubmissions()
         {
@@ -60,6 +86,20 @@ namespace WebApi.Controllers
 
             var submissions = await submissionService.GetAllSubmissionsAsync();
             return Ok(submissions);
+        }
+
+        [Authorize]
+        [AuthorizeRole("Professor")]
+        [HttpGet("by-status")]
+        public async Task<IActionResult> GetByStatus([FromQuery] WorkStatus status)
+        {
+            var submissionService = ServiceProxy.Create<ISubmissionService>(
+                new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
+                new ServicePartitionKey(0)
+            );
+
+            var result = await submissionService.GetSubmissionsByStatusAsync(status);
+            return Ok(result);
         }
 
     }

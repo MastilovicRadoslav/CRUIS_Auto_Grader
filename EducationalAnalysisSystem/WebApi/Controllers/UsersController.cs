@@ -11,6 +11,7 @@ namespace WebApi.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
+        // Nema autorizacije svi imaju pristup
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -34,7 +35,7 @@ namespace WebApi.Controllers
         }
 
 
-
+        // Nema autorizacije svi imaju pristup
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
