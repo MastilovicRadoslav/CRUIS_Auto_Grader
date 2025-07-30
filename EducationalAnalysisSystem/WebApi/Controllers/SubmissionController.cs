@@ -48,5 +48,19 @@ namespace WebApi.Controllers
             var works = await submissionService.GetWorksByStudentIdAsync(studentId);
             return Ok(works);
         }
+
+        [Authorize]
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllSubmissions()
+        {
+            var submissionService = ServiceProxy.Create<ISubmissionService>(
+                new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
+                new ServicePartitionKey(0)
+            );
+
+            var submissions = await submissionService.GetAllSubmissionsAsync();
+            return Ok(submissions);
+        }
+
     }
 }
