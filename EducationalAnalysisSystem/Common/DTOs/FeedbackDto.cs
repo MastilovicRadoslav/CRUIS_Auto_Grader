@@ -16,5 +16,7 @@ namespace Common.DTOs
         public List<string> Issues { get; set; } = new();
         public List<string> Suggestions { get; set; } = new();
         public string Summary { get; set; } = string.Empty;
+        public string? ProfessorComment { get; set; }
+
     }
 }
