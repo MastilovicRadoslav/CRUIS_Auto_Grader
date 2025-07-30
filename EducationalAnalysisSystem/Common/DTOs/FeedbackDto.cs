@@ -17,6 +17,7 @@ namespace Common.DTOs
         public List<string> Suggestions { get; set; } = new();
         public string Summary { get; set; } = string.Empty;
         public string? ProfessorComment { get; set; }
+        public DateTime EvaluatedAt { get; set; } = DateTime.UtcNow;
 
     }
 }
