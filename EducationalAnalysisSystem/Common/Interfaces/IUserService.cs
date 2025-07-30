@@ -13,5 +13,26 @@ namespace Common.Interfaces
 
         [OperationContract]
         Task<User?> LoginAsync(LoginRequest request); // Metoda za logovanje
+
+        [OperationContract]
+        Task<List<User>> GetAllUsersAsync(); // Dobavljanje svih korisnika
+
+        [OperationContract]
+        Task<OperationResult<Guid>> CreateUserAsync(CreateUserRequest request); //Kreisanje User-a
+
+        [OperationContract]
+        Task<OperationResult<bool>> DeleteUserAsync(Guid userId); // Brisanje User-a
+
+        [OperationContract]
+        Task<OperationResult<bool>> UpdateUserAsync(Guid userId, UpdateUserRequest request); //Azuriranje studenta
+
+        [OperationContract]
+        Task<OperationResult<bool>> SetMaxSubmissionsAsync(int max);
+
+        [OperationContract]
+        Task<int?> GetMaxSubmissionsAsync();
+
+
+
     }
 }

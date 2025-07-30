@@ -26,5 +26,12 @@ namespace Common.Interfaces
         [OperationContract]
         Task<EvaluationStatisticsDto> GetStatisticsAsync(); // Statistički izveštaji za profesora
 
+        [OperationContract]
+        Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId); // Filtriranje statistike po studentu
+
+        [OperationContract]
+        Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request); //Statistika evaluacija u zadatom vremenskom opsegu
+
+
     }
 }

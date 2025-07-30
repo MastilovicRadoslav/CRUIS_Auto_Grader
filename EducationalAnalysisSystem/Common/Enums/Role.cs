@@ -4,6 +4,6 @@
     {
         Student,
         Professor,
-        Administrator
+        Admin
     }
 }
