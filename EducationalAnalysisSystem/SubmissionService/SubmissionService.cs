@@ -89,6 +89,24 @@ namespace SubmissionService
         }
 
 
+        public async Task<List<SubmittedWork>> GetAllSubmissionsAsync()
+        {
+            var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+            var result = new List<SubmittedWork>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await submissions.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    result.Add(enumerator.Current.Value);
+                }
+            }
+
+            return result;
+        }
 
 
         public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId)
