@@ -2,7 +2,6 @@
 using Common.Models;
 using Microsoft.ServiceFabric.Services.Remoting;
 using System.ServiceModel;
-using System.Threading.Tasks;
 
 namespace Common.Interfaces
 {
@@ -14,6 +13,18 @@ namespace Common.Interfaces
 
         [OperationContract]
         Task<List<FeedbackDto>> GetFeedbacksByStudentIdAsync(Guid studentId); // Vraća sve feedback-ove koji pripadaju datom studentu. 
+
+        [OperationContract]
+        Task<bool> AddProfessorCommentAsync(AddProfessorCommentRequest request); // Metoda za dodavanje komentara na rad od strane profesora
+
+        [OperationContract]
+        Task<FeedbackDto?> GetFeedbackByWorkIdAsync(Guid workId); // Pregled feedback-a sa komentarima za konkretan rad
+
+        [OperationContract]
+        Task<List<FeedbackDto>> GetAllFeedbacksAsync(); // Profesor vidi sve feedback-ove koje je sistem generisao, Kasnije ćemo dodati: po studentu, po datumu, po oceni...
+
+        [OperationContract]
+        Task<EvaluationStatisticsDto> GetStatisticsAsync(); // Statistički izveštaji za profesora
 
     }
 }
