@@ -1,5 +1,6 @@
 ﻿using Common.Configurations;
 using Common.Models;
+using Common.Repositories;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -7,7 +8,7 @@ using MongoDB.Driver;
 
 namespace UserService.Data
 {
-    public class UserMongoRepository
+    public class UserMongoRepository : IUserRepository
     {
         private readonly IMongoCollection<User> _users;
 
@@ -34,6 +35,23 @@ namespace UserService.Data
         {
             return await _users.Find(_ => true).ToListAsync();
         }
+
+        public async Task DeleteByIdAsync(Guid id)
+        {
+            await _users.DeleteOneAsync(u => u.Id == id);
+        }
+
+        public async Task UpdateAsync(User user)
+        {
+            var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
+            await _users.ReplaceOneAsync(filter, user);
+        }
+
+        public async Task<List<User>> GetAllAsync()
+        {
+            return await _users.Find(Builders<User>.Filter.Empty).ToListAsync();
+        }
+
 
     }
 }

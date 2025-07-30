@@ -69,18 +69,31 @@ namespace UserService
         {
             var usersDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
+            // 1. Uzimamo sve korisnike iz MongoDB
+            var allUsers = await _mongoRepo.GetAllAsync();
+
             using (var tx = StateManager.CreateTransaction())
             {
-                var allFromMongo = await _mongoRepo.GetAllUsersAsync();
-
-                foreach (var user in allFromMongo)
+                // 2. Brišemo sve postojeće iz ReliableDictionary
+                var enumerable = await usersDict.CreateEnumerableAsync(tx, EnumerationMode.Unordered);
+                using (var e = enumerable.GetAsyncEnumerator())
                 {
-                    await usersDict.AddOrUpdateAsync(tx, user.Id, user, (key, oldValue) => user);
+                    while (await e.MoveNextAsync(CancellationToken.None))
+                    {
+                        await usersDict.TryRemoveAsync(tx, e.Current.Key);
+                    }
+                }
+
+                // 3. Ubacujemo sve korisnike iz baze
+                foreach (var user in allUsers)
+                {
+                    await usersDict.SetAsync(tx, user.Id, user);
                 }
 
                 await tx.CommitAsync();
             }
         }
+
 
 
 
@@ -155,6 +168,128 @@ namespace UserService
                 return null;
             }
         }
+
+        public async Task<List<User>> GetAllUsersAsync()
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
+            var result = new List<User>();
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var enumerable = await dict.CreateEnumerableAsync(tx);
+                var enumerator = enumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    result.Add(enumerator.Current.Value);
+                }
+            }
+
+            return result;
+        }
+        public async Task<OperationResult<Guid>> CreateUserAsync(CreateUserRequest request)
+        {
+            var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var allUsers = await users.CreateEnumerableAsync(tx);
+                var enumerator = allUsers.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    if (enumerator.Current.Value.Username == request.Username)
+                    {
+                        return OperationResult<Guid>.Fail("Username already exists.");
+                    }
+                }
+
+                var newUser = new User
+                {
+                    Username = request.Username,
+                    Password = PasswordHasher.Hash(request.Password),
+                    Role = request.Role
+                };
+
+                await _mongoRepo.InsertUserAsync(newUser);
+                await users.AddAsync(tx, newUser.Id, newUser);
+                await tx.CommitAsync();
+
+                return OperationResult<Guid>.Ok(newUser.Id);
+            }
+        }
+        public async Task<OperationResult<bool>> DeleteUserAsync(Guid userId)
+        {
+            var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var exists = await users.ContainsKeyAsync(tx, userId);
+                if (!exists)
+                    return OperationResult<bool>.Fail("User not found.");
+
+                await users.TryRemoveAsync(tx, userId);
+                await _mongoRepo.DeleteByIdAsync(userId);
+                await tx.CommitAsync();
+
+                return OperationResult<bool>.Ok(true);
+            }
+        }
+
+        public async Task<OperationResult<bool>> UpdateUserAsync(Guid userId, UpdateUserRequest request)
+        {
+            var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await users.TryGetValueAsync(tx, userId);
+                if (!result.HasValue)
+                    return OperationResult<bool>.Fail("User not found.");
+
+                var user = result.Value;
+
+                if (!string.IsNullOrEmpty(request.NewPassword))
+                {
+                    user.Password = PasswordHasher.Hash(request.NewPassword);
+                }
+
+                if (request.NewRole.HasValue)
+                {
+                    user.Role = request.NewRole.Value;
+                }
+
+                await users.SetAsync(tx, userId, user);
+                await tx.CommitAsync();
+
+                await _mongoRepo.UpdateAsync(user); // vidi dole
+
+                return OperationResult<bool>.Ok(true);
+            }
+        }
+
+        public async Task<OperationResult<bool>> SetMaxSubmissionsAsync(int max)
+        {
+            var settingsDict = await StateManager.GetOrAddAsync<IReliableDictionary<string, int>>("systemSettings");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                await settingsDict.SetAsync(tx, "MaxSubmissionsPerStudent", max);
+                await tx.CommitAsync();
+                return OperationResult<bool>.Ok(true);
+            }
+        }
+
+        public async Task<int?> GetMaxSubmissionsAsync()
+        {
+            var settingsDict = await StateManager.GetOrAddAsync<IReliableDictionary<string, int>>("systemSettings");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await settingsDict.TryGetValueAsync(tx, "MaxSubmissionsPerStudent");
+                return result.HasValue ? result.Value : null;
+            }
+        }
+
 
     }
 }
