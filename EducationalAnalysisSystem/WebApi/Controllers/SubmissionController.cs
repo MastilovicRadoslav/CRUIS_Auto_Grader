@@ -32,22 +32,24 @@ namespace WebApi.Controllers
                 return BadRequest(new { error = result.Error });
             }
 
-            // Evaluacija nakon uspješnog snimanja
-            var newSubmission = new SubmittedWork
-            {
-                Id = result.Data,
-                StudentId = request.StudentId,
-                Title = request.Title,
-                Content = request.Content, // ili ostavi prazno ako nije bitno
-                SubmittedAt = DateTime.UtcNow
-            };
+            //// Evaluacija nakon uspješnog snimanja
+            //var newSubmission = new SubmittedWork
+            //{
+            //    Id = result.Data,
+            //    StudentId = request.StudentId,
+            //    Title = request.Title,
+            //    Content = request.Content, // ili ostavi prazno ako nije bitno
+            //    SubmittedAt = DateTime.UtcNow
+            //};
 
-            var evaluationService = ServiceProxy.Create<IEvaluationService>(
-                new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
-                new ServicePartitionKey(0)
-            );
+            //var evaluationService = ServiceProxy.Create<IEvaluationService>(
+            //    new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+            //    new ServicePartitionKey(0)
+            //);
 
-            var feedback = await evaluationService.EvaluateAsync(newSubmission);
+            //var feedback = await evaluationService.EvaluateAsync(newSubmission);
+
+            //newSubmission.Status = WorkStatus.Completed;
 
             return Ok(new WorkResponse
             {

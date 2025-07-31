@@ -97,6 +97,35 @@ public class EvaluationController : ControllerBase
     }
 
     [Authorize]
+    [AuthorizeRole("Student")]
+    [HttpGet("feedback/my/{workId}")]
+    public async Task<IActionResult> GetMyFeedbackByWorkId(Guid workId)
+    {
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdStr))
+            return Unauthorized();
+
+        var studentId = Guid.Parse(userIdStr);
+
+        var evaluationService = ServiceProxy.Create<IEvaluationService>(
+            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+            new ServicePartitionKey(0)
+        );
+
+        var feedback = await evaluationService.GetFeedbackByWorkIdAsync(workId);
+
+        if (feedback == null)
+            return NotFound("Feedback not found for this work.");
+
+        if (feedback.StudentId != studentId)
+            return Forbid("You are not authorized to view feedback for this work.");
+
+        return Ok(feedback);
+    }
+
+
+    [Authorize]
     [AuthorizeRole("Professor")]
     [HttpGet("all-feedbacks")]
     public async Task<IActionResult> GetAllFeedbacks()

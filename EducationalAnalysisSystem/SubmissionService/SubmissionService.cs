@@ -59,12 +59,12 @@ namespace SubmissionService
                 }
 
                 // 3. Evaluacija
-                //var evaluationService = ServiceProxy.Create<IEvaluationService>(
-                //    new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
-                //    new ServicePartitionKey(0)
-                //);
+                var evaluationService = ServiceProxy.Create<IEvaluationService>(
+                    new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+                    new ServicePartitionKey(0)
+                );
 
-                //var feedback = await evaluationService.EvaluateAsync(newSubmission);
+                var feedback = await evaluationService.EvaluateAsync(newSubmission);
 
                 // 4. Promjena statusa i ažuriranje u Mongo + ReliableDictionary
                 newSubmission.Status = WorkStatus.Completed;

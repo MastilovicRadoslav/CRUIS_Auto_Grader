@@ -13,7 +13,7 @@ namespace WebApi.Controllers
     {
         // Nema autorizacije svi imaju pristup
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request) // Testirao u Frontendu i radi.
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -37,7 +37,7 @@ namespace WebApi.Controllers
 
         // Nema autorizacije svi imaju pristup
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request) //Testirao u Frontendu i radi.
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
