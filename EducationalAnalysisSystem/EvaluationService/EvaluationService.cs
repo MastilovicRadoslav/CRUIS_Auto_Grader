@@ -44,6 +44,7 @@ namespace EvaluationService
                 EvaluatedAt = DateTime.UtcNow
             };
 
+
             try
             {
                 // 1. Upis u Mongo

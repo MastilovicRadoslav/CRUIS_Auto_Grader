@@ -1,14 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <StartupServicesManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
+    <Parameter Name="EvaluationEngineService_InstanceCount" DefaultValue="-1" />
     <Parameter Name="EvaluationService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="EvaluationService_PartitionCount" DefaultValue="1" />
     <Parameter Name="EvaluationService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="NotificationService_InstanceCount" DefaultValue="-1" />
-    <Parameter Name="RecommendationService_InstanceCount" DefaultValue="-1" />
-    <Parameter Name="ProgressService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="ProgressService_PartitionCount" DefaultValue="1" />
-    <Parameter Name="ProgressService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="SubmissionService_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="SubmissionService_PartitionCount" DefaultValue="1" />
     <Parameter Name="SubmissionService_TargetReplicaSetSize" DefaultValue="3" />
@@ -23,6 +20,11 @@
          ServiceFabric PowerShell module.
 
          The attribute ServiceTypeName below must match the name defined in the imported ServiceManifest.xml file. -->
+    <Service Name="EvaluationEngineService" ServicePackageActivationMode="ExclusiveProcess">
+      <StatelessService ServiceTypeName="EvaluationEngineServiceType" InstanceCount="[EvaluationEngineService_InstanceCount]">
+        <SingletonPartition />
+      </StatelessService>
+    </Service>
     <Service Name="EvaluationService" ServicePackageActivationMode="ExclusiveProcess">
       <StatefulService ServiceTypeName="EvaluationServiceType" TargetReplicaSetSize="[EvaluationService_TargetReplicaSetSize]" MinReplicaSetSize="[EvaluationService_MinReplicaSetSize]">
         <UniformInt64Partition PartitionCount="[EvaluationService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
@@ -32,16 +34,6 @@
       <StatelessService ServiceTypeName="NotificationServiceType" InstanceCount="[NotificationService_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
-    </Service>
-    <Service Name="RecommendationService" ServicePackageActivationMode="ExclusiveProcess">
-      <StatelessService ServiceTypeName="RecommendationServiceType" InstanceCount="[RecommendationService_InstanceCount]">
-        <SingletonPartition />
-      </StatelessService>
-    </Service>
-    <Service Name="ProgressService" ServicePackageActivationMode="ExclusiveProcess">
-      <StatefulService ServiceTypeName="ProgressServiceType" TargetReplicaSetSize="[ProgressService_TargetReplicaSetSize]" MinReplicaSetSize="[ProgressService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[ProgressService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
-      </StatefulService>
     </Service>
     <Service Name="SubmissionService" ServicePackageActivationMode="ExclusiveProcess">
       <StatefulService ServiceTypeName="SubmissionServiceType" TargetReplicaSetSize="[SubmissionService_TargetReplicaSetSize]" MinReplicaSetSize="[SubmissionService_MinReplicaSetSize]">

@@ -1,6 +1,7 @@
 ﻿using Common.DTOs;
 using Common.Enums;
 using Common.Interfaces;
+using Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ServiceFabric.Services.Client;
@@ -19,7 +20,6 @@ namespace WebApi.Controllers
         [HttpPost("submit")]
         public async Task<IActionResult> SubmitWork([FromBody] SubmitWorkRequest request)
         {
-
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
                 new ServicePartitionKey(0)
@@ -32,12 +32,30 @@ namespace WebApi.Controllers
                 return BadRequest(new { error = result.Error });
             }
 
+            // Evaluacija nakon uspješnog snimanja
+            var newSubmission = new SubmittedWork
+            {
+                Id = result.Data,
+                StudentId = request.StudentId,
+                Title = request.Title,
+                Content = request.Content, // ili ostavi prazno ako nije bitno
+                SubmittedAt = DateTime.UtcNow
+            };
+
+            var evaluationService = ServiceProxy.Create<IEvaluationService>(
+                new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+                new ServicePartitionKey(0)
+            );
+
+            var feedback = await evaluationService.EvaluateAsync(newSubmission);
+
             return Ok(new WorkResponse
             {
                 WorkId = result.Data,
-                Message = "Work submitted successfully."
+                Message = "Work submitted and evaluated successfully.",
             });
         }
+
 
         [Authorize]
         [AuthorizeRole("Student")]
