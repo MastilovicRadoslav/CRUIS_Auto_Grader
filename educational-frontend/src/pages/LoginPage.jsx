@@ -14,11 +14,15 @@ const LoginPage = () => {
     const onFinish = async (values) => {
         setLoading(true);
         try {
-            const response = await loginUser(values); //slanje post zahtjeva na backend
-            login(response.data.Token);
+            const response = await loginUser(values); // slanje POST zahteva na backend
+            console.log("Login response:", response.data); // <--- dodaj ovo
+            login(response.data.token);
             message.success(response.data.Message);
-            if (response.data.Role === "Student") navigate("/student");
-            else if (response.data.Role === "Professor") navigate("/professor");
+
+            const role = response.data.role.toLowerCase();
+
+            if (role === "student") navigate("/student");
+            else if (role === "professor") navigate("/professor");
             else navigate("/admin");
         } catch (err) {
             message.error("Login failed: " + (err.response?.data || "Unexpected error"));
@@ -26,6 +30,7 @@ const LoginPage = () => {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="login-container" style={{ display: "flex", justifyContent: "center", marginTop: "10%" }}>

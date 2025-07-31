@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Select, message, Card } from "antd";
 import axios from "axios";
+import { registerUser } from "../services/authService";
 
 const { Option } = Select;
 
@@ -12,7 +13,7 @@ const RegisterPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/users/register`, values);
+      registerUser(values); //slanje post zahtjeva na backend
       message.success("Registration successful! You can now log in.");
       navigate("/");
     } catch (err) {
@@ -36,7 +37,6 @@ const RegisterPage = () => {
             <Select placeholder="Select a role">
               <Option value="Student">Student</Option>
               <Option value="Professor">Professor</Option>
-              <Option value="Admin">Admin</Option>
             </Select>
           </Form.Item>
           <Form.Item>
@@ -45,7 +45,7 @@ const RegisterPage = () => {
             </Button>
           </Form.Item>
           <div style={{ textAlign: "center" }}>
-            Already have an account? <Link to="/login">Login</Link>
+            Already have an account? <Link to="/">Login</Link>
           </div>
         </Form>
       </Card>
