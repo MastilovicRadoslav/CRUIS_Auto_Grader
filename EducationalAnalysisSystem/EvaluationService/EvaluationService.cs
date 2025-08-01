@@ -36,7 +36,9 @@ namespace EvaluationService
             var feedback = new FeedbackDto
             {
                 WorkId = work.Id,
+                Title = work.Title,
                 StudentId = work.StudentId,
+                StudentName = work.StudentName,
                 Grade = 85,
                 Issues = new List<string> { "No major issues detected." },
                 Suggestions = new List<string> { "Consider expanding the conclusion." },
