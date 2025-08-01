@@ -18,7 +18,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpPost("submit")]
-        public async Task<IActionResult> SubmitWork([FromBody] SubmitWorkRequest request)
+        public async Task<IActionResult> SubmitWork([FromBody] SubmitWorkRequest request) // Testirano
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
@@ -62,7 +62,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyWorks()
+        public async Task<IActionResult> GetMyWorks() //Testirano
         {
             var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -97,7 +97,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Professor")]
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllSubmissions()
+        public async Task<IActionResult> GetAllSubmissions() // Testirano
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
