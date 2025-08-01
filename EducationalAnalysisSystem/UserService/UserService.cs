@@ -1,5 +1,6 @@
 ﻿using Common.Configurations;
 using Common.DTOs;
+using Common.Enums;
 using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
@@ -181,12 +182,18 @@ namespace UserService
 
                 while (await enumerator.MoveNextAsync(CancellationToken.None))
                 {
-                    result.Add(enumerator.Current.Value);
+                    var user = enumerator.Current.Value;
+
+                    if (user.Role != Role.Admin) // Izuzmi admine
+                    {
+                        result.Add(user);
+                    }
                 }
             }
 
             return result;
         }
+
         public async Task<OperationResult<Guid>> CreateUserAsync(CreateUserRequest request)
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
@@ -290,6 +297,21 @@ namespace UserService
             }
         }
 
+        public async Task<string?> GetStudentNameByIdAsync(Guid studentId) // Dobavljanje ime studenta na osnovu njegovog imena za potrebe cuvanja imena studenta u bazu za rad
+        {
+            var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await users.TryGetValueAsync(tx, studentId);
+
+                if (result.HasValue)
+                {
+                    return result.Value.Username;
+                }
+
+                return null;
+            }
+        }
     }
 }
