@@ -36,15 +36,25 @@ namespace SubmissionService
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
 
+            //Dobavljanje imena studenta na osnovu Id
+            var userService = ServiceProxy.Create<IUserService>(
+                new Uri("fabric:/EducationalAnalysisSystem/UserService"),
+                new ServicePartitionKey(0)
+            );
+
+            var studentName = await userService.GetStudentNameByIdAsync(request.StudentId);
+
             var newSubmission = new SubmittedWork
             {
                 Id = Guid.NewGuid(),
                 StudentId = request.StudentId,
                 Title = request.Title,
-                Content = request.Content,
+                Content = request.Content, // kasnije fajovi
+                StudentName = studentName ?? "Unknown",
                 SubmittedAt = DateTime.UtcNow,
                 Status = WorkStatus.Pending
             };
+
 
             try
             {
