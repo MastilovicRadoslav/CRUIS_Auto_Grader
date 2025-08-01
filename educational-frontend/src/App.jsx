@@ -4,6 +4,9 @@ import Navbar from "./components/Navbar";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import StudentDashboard from "./pages/StudentDashboard";
+import ProfessorDashboard from "./pages/ProfessorDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+
 import { Layout } from "antd";
 
 function App() {
@@ -17,6 +20,9 @@ function App() {
               <Route path="/" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/student" element={<StudentDashboard />} />
+              <Route path="/professor" element={ <ProfessorDashboard /> }/>
+              <Route path="/admin" element={ <AdminDashboard /> }/>
+
               {/* Ostale rute za profesora i admina dolaze kasnije */}
             </Routes>
           </div>
