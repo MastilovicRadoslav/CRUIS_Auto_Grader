@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Modal, Typography, Spin, Alert } from "antd";
 import { getFeedbackByWorkId } from "../services/submissionService";
+import { useAuth } from "../context/AuthContext"; // Dodato
 
 const { Title, Paragraph } = Typography;
 
 const FeedbackModal = ({ visible, onClose, workId }) => {
+  const { token, userId } = useAuth(); // 👈 dodaj userId
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -15,7 +17,7 @@ const FeedbackModal = ({ visible, onClose, workId }) => {
     const fetchFeedback = async () => {
       setLoading(true);
       try {
-        const result = await getFeedbackByWorkId(workId);
+        const result = await getFeedbackByWorkId(workId); 
         setFeedback(result);
         setError("");
       } catch (err) {
@@ -26,7 +28,7 @@ const FeedbackModal = ({ visible, onClose, workId }) => {
     };
 
     fetchFeedback();
-  }, [workId, visible]);
+  }, [workId, visible, token]);
 
   return (
     <Modal
@@ -41,11 +43,11 @@ const FeedbackModal = ({ visible, onClose, workId }) => {
         <Alert type="error" message={error} />
       ) : feedback ? (
         <div>
-          <Title level={5}>Feedback ID</Title>
-          <Paragraph copyable>{feedback.id || feedback._id}</Paragraph>
+          <Title level={5}>Work Title</Title>
+          <Paragraph>{feedback.title || "Untitled"}</Paragraph>
 
-          <Title level={5}>Student ID</Title>
-          <Paragraph copyable>{feedback.studentId}</Paragraph>
+          <Title level={5}>Student Name</Title>
+          <Paragraph>{feedback.studentName || "Unknown"}</Paragraph>
 
           <Title level={5}>Grade</Title>
           <Paragraph>{feedback.grade}</Paragraph>
