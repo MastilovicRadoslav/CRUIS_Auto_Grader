@@ -13,7 +13,7 @@ public class EvaluationController : ControllerBase
 
     [Authorize]
     [AuthorizeRole("Professor")]
-    [HttpGet("feedbacks/student/{studentId}")]
+    [HttpGet("feedbacks/student/{studentId}")] // Nijesam upotrijebio za sad jer sam filtrirao
     public async Task<IActionResult> GetFeedbacksByStudentId(Guid studentId)
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
@@ -35,7 +35,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Student")]
     [HttpGet("feedbacks/my")]
-    public async Task<IActionResult> GetMyFeedbacks()
+    public async Task<IActionResult> GetMyFeedbacks() // Nijesam upotrijebio 
     {
         var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -64,7 +64,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpPost("professor-comment")]
-    public async Task<IActionResult> AddProfessorComment([FromBody] AddProfessorCommentRequest request)
+    public async Task<IActionResult> AddProfessorComment([FromBody] AddProfessorCommentRequest request) // Testirano
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -80,9 +80,8 @@ public class EvaluationController : ControllerBase
     }
 
     [Authorize]
-    [AuthorizeRole("Professor")]
     [HttpGet("feedback/{workId}")]
-    public async Task<IActionResult> GetFeedbackByWorkId(Guid workId)
+    public async Task<IActionResult> GetFeedbackByWorkId(Guid workId) // Testirano, 
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -95,40 +94,11 @@ public class EvaluationController : ControllerBase
 
         return Ok(feedback);
     }
-
-    [Authorize]
-    [AuthorizeRole("Student")]
-    [HttpGet("feedback/my/{workId}")]
-    public async Task<IActionResult> GetMyFeedbackByWorkId(Guid workId)
-    {
-        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userIdStr))
-            return Unauthorized();
-
-        var studentId = Guid.Parse(userIdStr);
-
-        var evaluationService = ServiceProxy.Create<IEvaluationService>(
-            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
-            new ServicePartitionKey(0)
-        );
-
-        var feedback = await evaluationService.GetFeedbackByWorkIdAsync(workId);
-
-        if (feedback == null)
-            return NotFound("Feedback not found for this work.");
-
-        if (feedback.StudentId != studentId)
-            return Forbid("You are not authorized to view feedback for this work.");
-
-        return Ok(feedback);
-    }
-
 
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpGet("all-feedbacks")]
-    public async Task<IActionResult> GetAllFeedbacks()
+    public async Task<IActionResult> GetAllFeedbacks() //Ne treba mi
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -170,7 +140,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpPost("statistics/date-range")]
-    public async Task<IActionResult> GetStatisticsByDateRange([FromBody] DateRangeRequest request)
+    public async Task<IActionResult> GetStatisticsByDateRange([FromBody] DateRangeRequest request) // Testirano radi
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
