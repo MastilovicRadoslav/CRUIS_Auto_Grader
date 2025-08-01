@@ -8,9 +8,11 @@ namespace Common.DTOs
         [BsonId]
         [BsonRepresentation(BsonType.String)]
         public Guid WorkId { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.String)] // 
         public Guid StudentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
 
         public int Grade { get; set; }
         public List<string> Issues { get; set; } = new();
