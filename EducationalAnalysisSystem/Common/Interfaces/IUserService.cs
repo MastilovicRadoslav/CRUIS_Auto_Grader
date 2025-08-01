@@ -32,7 +32,8 @@ namespace Common.Interfaces
         [OperationContract]
         Task<int?> GetMaxSubmissionsAsync();
 
-
+        [OperationContract]
+        Task<string?> GetStudentNameByIdAsync(Guid studentId);
 
     }
 }
