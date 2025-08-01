@@ -13,9 +13,8 @@ namespace WebApi.Controllers
     public class AdminController : ControllerBase
     {
         [Authorize]
-        [AuthorizeRole("Admin")]
         [HttpGet("users")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers() // Testirano
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -90,7 +89,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Admin")]
         [HttpPost("settings/max-submissions")]
-        public async Task<IActionResult> SetMaxSubmissions([FromBody] MaxSubmissionsSetting request)
+        public async Task<IActionResult> SetMaxSubmissions([FromBody] MaxSubmissionsSetting request) // Testirano
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -104,7 +103,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Admin")]
         [HttpGet("settings/max-submissions")]
-        public async Task<IActionResult> GetMaxSubmissions()
+        public async Task<IActionResult> GetMaxSubmissions() //Testirano
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
