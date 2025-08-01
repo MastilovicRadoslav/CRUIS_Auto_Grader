@@ -15,8 +15,8 @@ const LoginPage = () => {
         setLoading(true);
         try {
             const response = await loginUser(values); // slanje POST zahteva na backend
-            console.log("Login response:", response.data); // <--- dodaj ovo
-            login(response.data.token);
+            console.log("Login response:", response.data); 
+            login(response.data.token, response.data.userId, response.data.role); // Čuvam token, userId i role
             message.success(response.data.Message);
 
             const role = response.data.role.toLowerCase();
