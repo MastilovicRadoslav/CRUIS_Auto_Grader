@@ -5,23 +5,27 @@ import { useAuth } from "../context/AuthContext";
 
 const SubmitWorkModal = ({ visible, onClose, onSuccess }) => {
   const [form] = Form.useForm();
-  const { token } = useAuth();
+  const { token , userId} = useAuth(); // 
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (values) => {
-    setLoading(true);
-    try {
-      await submitWork(values, token);
-      message.success("Work submitted successfully!");
-      form.resetFields();
-      onSuccess(); // osvježavanje liste
-      onClose();
-    } catch (err) {
-      message.error("Submission failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleSubmit = async (values) => {
+  setLoading(true);
+  try {
+    const payload = {
+      ...values,
+      studentId: userId, // dodaj userId u payload
+    };
+    await submitWork(payload, token); 
+    message.success("Work submitted successfully!");
+    form.resetFields();
+    onSuccess();
+    onClose();
+  } catch (err) {
+    message.error("Submission failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Modal
