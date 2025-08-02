@@ -12,16 +12,18 @@ export const fetchMySubmissions = async (token) => {
   return response.data;
 };
 
-// Dodavanje rada od nekog studenta
-export const submitWork = async (payload, token) => {
-  const response = await axios.post(`${API_URL}/submission/submit`, payload, {
+// Slanje rada studenta
+export const submitWork = async (formData, token) => {
+  const response = await axios.post(`${API_URL}/submission/submit`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
     },
   });
 
   return response.data;
 };
+
 
 // Dobavljanje evaluacije za odredjeni rad
 export const getFeedbackByWorkId = async (workId) => {
