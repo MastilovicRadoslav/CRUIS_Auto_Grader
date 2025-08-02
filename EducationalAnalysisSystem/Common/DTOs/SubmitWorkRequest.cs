@@ -1,9 +1,17 @@
-﻿namespace Common.DTOs
+﻿using System.Runtime.Serialization;
+
+namespace Common.DTOs
 {
+    [DataContract]
     public class SubmitWorkRequest
     {
+        [DataMember]
         public Guid StudentId { get; set; }
-        public string Content { get; set; } = string.Empty; // Kasnije ce biti za razlicite fajlove
+
+        [DataMember]
+        public string Content { get; set; } = string.Empty;
+
+        [DataMember]
         public string Title { get; set; } = string.Empty;
     }
 }

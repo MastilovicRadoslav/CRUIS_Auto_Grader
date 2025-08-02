@@ -10,7 +10,7 @@ namespace Common.Interfaces
     public interface ISubmissionService : IService
     {
         [OperationContract]
-        Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkRequest request); // Postavljanje svih radova
+        Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkData request); // Postavljanje svih radova
 
         [OperationContract]
         Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId); // Dobavljanje svih radova za nekog studenta što je postavio
