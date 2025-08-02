@@ -112,7 +112,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpGet("statistics")]
-    public async Task<IActionResult> GetStatistics()
+    public async Task<IActionResult> GetStatistics() // Izvlacenje statistike svih feedback-ova za sve studente
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -126,7 +126,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpGet("statistics/student/{studentId}")]
-    public async Task<IActionResult> GetStatisticsByStudentId(Guid studentId)
+    public async Task<IActionResult> GetStatisticsByStudentId(Guid studentId) // Izvlacenje statistike svih feedback-ova za nekog studenta
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),

@@ -18,45 +18,46 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpPost("submit")]
-        public async Task<IActionResult> SubmitWork([FromBody] SubmitWorkRequest request) // Testirano
+        public async Task<IActionResult> SubmitWork([FromForm] IFormFile file, [FromForm] string title, [FromForm] Guid studentId)
         {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "No file uploaded." });
+
+            if (string.IsNullOrWhiteSpace(title))
+                return BadRequest(new { error = "Title is required." });
+
+            if (studentId == Guid.Empty)
+                return BadRequest(new { error = "Invalid student ID." });
+
+            var content = await FileProcessor.ExtractTextAsync(file);
+
+            var analysis = await LlmClient.AnalyzeAsync(content);
+
+            var submitData = new SubmitWorkData
+            {
+                StudentId = studentId,
+                Title = title,
+                Content = content,
+                Analysis = analysis
+            };
+
+            //
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
                 new ServicePartitionKey(0)
             );
+            var result = await submissionService.SubmitWorkAsync(submitData);
 
-            var result = await submissionService.SubmitWorkAsync(request);
 
-            if (!result.Success)
-            {
-                return BadRequest(new { error = result.Error });
-            }
-
-            //// Evaluacija nakon uspješnog snimanja
-            //var newSubmission = new SubmittedWork
-            //{
-            //    Id = result.Data,
-            //    StudentId = request.StudentId,
-            //    Title = request.Title,
-            //    Content = request.Content, // ili ostavi prazno ako nije bitno
-            //    SubmittedAt = DateTime.UtcNow
-            //};
-
-            //var evaluationService = ServiceProxy.Create<IEvaluationService>(
-            //    new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
-            //    new ServicePartitionKey(0)
-            //);
-
-            //var feedback = await evaluationService.EvaluateAsync(newSubmission);
-
-            //newSubmission.Status = WorkStatus.Completed;
-
-            return Ok(new WorkResponse
+            // Za sada samo testiramo prijem podataka, ništa više
+            return Ok(new
             {
                 WorkId = result.Data,
-                Message = "Work submitted and evaluated successfully.",
+                Analysis = analysis
             });
+
         }
+
 
 
         [Authorize]

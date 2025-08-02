@@ -32,7 +32,7 @@ namespace SubmissionService
             _mongoRepo = new SubmissionMongoRepository(submissionSettings);
         }
 
-        public async Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkRequest request)
+        public async Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkData request)
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
 
@@ -52,7 +52,8 @@ namespace SubmissionService
                 Content = request.Content, // kasnije fajovi
                 StudentName = studentName ?? "Unknown",
                 SubmittedAt = DateTime.UtcNow,
-                Status = WorkStatus.Pending
+                Status = WorkStatus.Completed,
+                Analysis = request.Analysis,
             };
 
 

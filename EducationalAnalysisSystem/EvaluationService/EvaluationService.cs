@@ -39,13 +39,12 @@ namespace EvaluationService
                 Title = work.Title,
                 StudentId = work.StudentId,
                 StudentName = work.StudentName,
-                Grade = 85,
-                Issues = new List<string> { "No major issues detected." },
-                Suggestions = new List<string> { "Consider expanding the conclusion." },
-                Summary = "Basic evaluation completed successfully.",
+                Grade = work.Analysis.Grade,
+                Issues = work.Analysis.Issues,
+                Suggestions = work.Analysis.Suggestions,
+                Summary = work.Analysis.Summary,
                 EvaluatedAt = DateTime.UtcNow
             };
-
 
             try
             {
