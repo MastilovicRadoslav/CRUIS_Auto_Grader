@@ -4,9 +4,11 @@ using Common.Interfaces;
 using Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
 using WebApi.Helpers;
+using WebApi.Hubs;
 
 
 namespace WebApi.Controllers
@@ -31,33 +33,35 @@ namespace WebApi.Controllers
 
             var content = await FileProcessor.ExtractTextAsync(file);
 
-            var analysis = await LlmClient.AnalyzeAsync(content);
-
             var submitData = new SubmitWorkData
             {
                 StudentId = studentId,
                 Title = title,
-                Content = content,
-                Analysis = analysis
+                Content = content // // Parsiranje fajla jer se fajl ne moze prenositi preko remoting
             };
 
-            //
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
                 new ServicePartitionKey(0)
             );
+
             var result = await submissionService.SubmitWorkAsync(submitData);
 
-
-            // Za sada samo testiramo prijem podataka, ništa više
             return Ok(new
             {
                 WorkId = result.Data,
-                Analysis = analysis
+                Content = content
             });
-
         }
 
+
+        [HttpPost("notify-status-change")]
+        public async Task<IActionResult> NotifyStatusChange([FromBody] StatusChangeNotificationDto dto)
+        {
+            var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<StatusHub>>();
+            await hubContext.Clients.All.SendAsync("StatusChanged", dto);
+            return Ok();
+        }
 
 
         [Authorize]

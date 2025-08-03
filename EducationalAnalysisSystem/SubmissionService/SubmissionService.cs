@@ -10,6 +10,7 @@ using Microsoft.ServiceFabric.Services.Remoting.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
+using System.Net.Http.Json;
 
 namespace SubmissionService
 {
@@ -44,17 +45,20 @@ namespace SubmissionService
 
             var studentName = await userService.GetStudentNameByIdAsync(request.StudentId);
 
+            var estimatedTime = EstimateAnalysisTime(request.Content);
+
             var newSubmission = new SubmittedWork
             {
                 Id = Guid.NewGuid(),
                 StudentId = request.StudentId,
                 Title = request.Title,
-                Content = request.Content, // kasnije fajovi
+                Content = request.Content, // 
+                EstimatedAnalysisTime = estimatedTime,
                 StudentName = studentName ?? "Unknown",
                 SubmittedAt = DateTime.UtcNow,
-                Status = WorkStatus.Completed,
-                Analysis = request.Analysis,
+                Status = WorkStatus.InProgress
             };
+
 
 
             try
@@ -69,6 +73,27 @@ namespace SubmissionService
                     await tx.CommitAsync();
                 }
 
+                // ✅ Prva SignalR notifikacija odmah nakon upisa
+                try
+                {
+                    var httpClient = new HttpClient();
+                    var notification = new StatusChangeNotificationDto
+                    {
+                        WorkId = newSubmission.Id,
+                        NewStatus = newSubmission.Status,
+                        Title = newSubmission.Title,
+                        EstimatedAnalysisTime = newSubmission.EstimatedAnalysisTime,
+                        SubmittedAt = newSubmission.SubmittedAt
+                    };
+
+                    await httpClient.PostAsJsonAsync("http://localhost:8285/api/submission/notify-status-change", notification);
+                }
+                catch (Exception ex)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this.Context, "Initial SignalR notification failed: " + ex.Message);
+                }
+
+
                 // 3. Evaluacija
                 var evaluationService = ServiceProxy.Create<IEvaluationService>(
                     new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -77,17 +102,50 @@ namespace SubmissionService
 
                 var feedback = await evaluationService.EvaluateAsync(newSubmission);
 
-                // 4. Promjena statusa i ažuriranje u Mongo + ReliableDictionary
-                newSubmission.Status = WorkStatus.Completed;
+                //// 4. Promjena statusa i ažuriranje u Mongo + ReliableDictionary
+                if (feedback.Grade == 0)
+                {
+                    newSubmission.Status = WorkStatus.Rejected;
+                }
+                else
+                {
+                    newSubmission.Status = WorkStatus.Completed;
+                }
 
-                // Update u Mongo (moraš imati metodu UpdateStatusByIdAsync)
-                await _mongoRepo.UpdateStatusByIdAsync(newSubmission.Id, WorkStatus.Completed);
+                //newSubmission.EstimatedAnalysisTime = TimeSpan.Zero; // Ako Sladjana kaze da treba da se resetuje na 0 nakon analize ili da se uzivo prati oduzimanje onda cemo nesto jos dodati
 
-                // Update u ReliableDictionary
+
+
+                //// Update u Mongo (moraš imati metodu UpdateStatusByIdAsync)
+                await _mongoRepo.UpdateStatusByIdAsync(newSubmission.Id, newSubmission.Status);
+
+                //// Update u ReliableDictionary
                 using (var tx = StateManager.CreateTransaction())
                 {
                     await submissions.SetAsync(tx, newSubmission.Id, newSubmission);
                     await tx.CommitAsync();
+                }
+
+                // ✅ 5. Pošalji SignalR obavještenje preko WebApi
+                try
+                {
+                    var httpClient = new HttpClient();
+                    var notification = new StatusChangeNotificationDto
+                    {
+                        WorkId = newSubmission.Id,
+                        NewStatus = newSubmission.Status,
+                        Title = newSubmission.Title,
+                        EstimatedAnalysisTime = newSubmission.EstimatedAnalysisTime,
+                        SubmittedAt = newSubmission.SubmittedAt
+                    };
+
+
+                    await httpClient.PostAsJsonAsync("http://localhost:8285/api/submission/notify-status-change", notification);
+                }
+                catch (Exception ex)
+                {
+                    // Možeš logovati da SignalR notifikacija nije prošla, ali NE bacaj exception
+                    ServiceEventSource.Current.ServiceMessage(this.Context, "SignalR notification failed: " + ex.Message);
                 }
 
                 return OperationResult<Guid>.Ok(newSubmission.Id);
@@ -239,6 +297,23 @@ namespace SubmissionService
             }
 
             return result;
+        }
+
+        private TimeSpan EstimateAnalysisTime(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return TimeSpan.FromMinutes(1); // fallback
+
+            var charCount = content.Length;
+
+            if (charCount < 1000)
+                return TimeSpan.FromMinutes(1);
+            if (charCount < 3000)
+                return TimeSpan.FromMinutes(2);
+            if (charCount < 6000)
+                return TimeSpan.FromMinutes(3);
+
+            return TimeSpan.FromMinutes(5); // veći fajlovi
         }
 
     }
