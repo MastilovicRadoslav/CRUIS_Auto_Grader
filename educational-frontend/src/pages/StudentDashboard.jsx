@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchMySubmissions } from "../services/submissionService";
-import { List, Card, Typography, Spin, message, Button } from "antd";
+import { List, Card, Typography, Spin, message, Button, Tag } from "antd";
 import SubmitWorkModal from "../components/SubmitWorkModal";
 import FeedbackModal from "../components/FeedbackModal";
+import { useSignalR } from "../services/useSignalR"; // ili tvoja tačna putanja
+
 
 const { Title } = Typography;
 
@@ -18,7 +20,6 @@ const StudentDashboard = () => {
     const loadSubmissions = async () => {
       try {
         const data = await fetchMySubmissions(token);
-        console.log("Fetched submissions:", data);
         setSubmissions(data);
       } catch (err) {
         message.error("Failed to load your submissions.");
@@ -29,6 +30,35 @@ const StudentDashboard = () => {
 
     loadSubmissions();
   }, [token]);
+
+  useSignalR((data) => {
+    setSubmissions((prev) => {
+      const found = prev.find((s) => s.id === data.workId);
+      if (found) {
+        return prev.map((s) =>
+          s.id === data.workId
+            ? {
+              ...s,
+              status: data.newStatus,
+              estimatedAnalysisTime: data.estimatedAnalysisTime,
+              submittedAt: data.submittedAt
+            }
+            : s
+        );
+      } else {
+        return [{
+          id: data.workId,
+          title: data.title,
+          status: data.newStatus,
+          estimatedAnalysisTime: data.estimatedAnalysisTime,
+          submittedAt: data.submittedAt
+        }, ...prev];
+      }
+    });
+  });
+
+
+
 
   if (loading) {
     return (
@@ -44,6 +74,22 @@ const StudentDashboard = () => {
       </div>
     );
   }
+
+  const formatStatus = (status) => {
+    const statusMap = {
+      0: "Pending",
+      1: "InProgress",
+      2: "Completed",
+      3: "Rejected",
+      InProgress: "In Progress",
+      Completed: "Completed",
+      Rejected: "Rejected",
+      Pending: "Pendign",
+    };
+    return statusMap[status] || status;
+  };
+
+
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -63,12 +109,20 @@ const StudentDashboard = () => {
         renderItem={(item) => (
           <List.Item>
             <Card title={item.title}>
-              <p><strong>Status:</strong> {item.status}</p>
-              <p><strong>Content:</strong> {item.content}</p>
+              <p><strong>Status:</strong> {formatStatus(item.status)}</p>
+              <p>
+                <strong>Estimated Analysis Time:</strong>{" "}
+                {item.estimatedAnalysisTime
+                  ? `${parseInt(item.estimatedAnalysisTime.match(/\d+/g)?.[1] || "0", 10)} minutes`
+                  : "Unknown"}
+              </p>
               <p>
                 <strong>Submitted At:</strong>{" "}
-                {new Date(item.submittedAt).toLocaleString()}
+                {item.submittedAt
+                  ? new Date(item.submittedAt).toLocaleString()
+                  : "Unknown"}
               </p>
+
               <Button onClick={() => setSelectedWorkId(item.id)}>
                 View Feedback
               </Button>
@@ -80,18 +134,10 @@ const StudentDashboard = () => {
       <SubmitWorkModal
         visible={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={async () => {
-          setLoading(true);
-          try {
-            const data = await fetchMySubmissions(token);
-            setSubmissions(data);
-          } catch (err) {
-            message.error("Failed to reload submissions.");
-          } finally {
-            setLoading(false);
-          }
-        }}
       />
+
+
+
 
       <FeedbackModal
         visible={!!selectedWorkId}

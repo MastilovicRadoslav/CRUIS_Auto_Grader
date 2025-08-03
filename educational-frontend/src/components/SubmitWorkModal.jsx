@@ -16,21 +16,25 @@ const SubmitWorkModal = ({ visible, onClose, onSuccess }) => {
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", file.name.split(".")[0]); // ime fajla bez ekstenzije
+      formData.append("title", file.name.split(".")[0]);
       formData.append("studentId", userId);
 
+      // ⬇️ Zatvaramo modal odmah!
+      onClose();
+
+      // ⬇️ Pokrećemo pravi request
       await submitWork(formData, token);
 
       message.success("Work submitted successfully!");
       form.resetFields();
-      onSuccess();
-      onClose();
     } catch (err) {
       message.error("Submission failed.");
     } finally {
       setLoading(false);
     }
   };
+
+
 
   return (
     <Modal
