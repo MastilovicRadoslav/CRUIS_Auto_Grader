@@ -1,4 +1,5 @@
-﻿using Common.Enums;
+﻿using Common.DTOs;
+using Common.Enums;
 using Common.Models;
 
 namespace Common.Repositories

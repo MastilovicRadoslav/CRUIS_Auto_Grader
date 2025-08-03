@@ -1,5 +1,6 @@
 ﻿using Common.Configurations;
 using Common.DTOs;
+using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
 using EvaluationService.Data;
@@ -30,28 +31,43 @@ namespace EvaluationService
 
             _feedbackRepo = new FeedbackMongoRepository(settings);
         }
-
         public async Task<FeedbackDto> EvaluateAsync(SubmittedWork work)
         {
+            AnalysisResultDto? analysis = null;
+
+            try
+            {
+                analysis = await LlmClient.AnalyzeAsync(work.Content);
+            }
+            catch (Exception ex)
+            {
+                // fallback analiza
+                analysis = new AnalysisResultDto
+                {
+                    Grade = 0,
+                    Issues = new List<string> { "Analysis failed." },
+                    Suggestions = new List<string> { "Try again later." },
+                    Summary = "LLM service is not responding or returned invalid result."
+                };
+            }
+
             var feedback = new FeedbackDto
             {
                 WorkId = work.Id,
                 Title = work.Title,
                 StudentId = work.StudentId,
                 StudentName = work.StudentName,
-                Grade = work.Analysis.Grade,
-                Issues = work.Analysis.Issues,
-                Suggestions = work.Analysis.Suggestions,
-                Summary = work.Analysis.Summary,
+                Grade = analysis.Grade,
+                Issues = analysis.Issues,
+                Suggestions = analysis.Suggestions,
+                Summary = analysis.Summary,
                 EvaluatedAt = DateTime.UtcNow
             };
 
             try
             {
-                // 1. Upis u Mongo
                 await _feedbackRepo.InsertAsync(feedback);
 
-                // 2. Upis u ReliableDictionary
                 var feedbackDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
 
                 using (var tx = StateManager.CreateTransaction())
@@ -68,6 +84,7 @@ namespace EvaluationService
                 throw;
             }
         }
+
 
         public async Task<bool> AddProfessorCommentAsync(AddProfessorCommentRequest request)
         {

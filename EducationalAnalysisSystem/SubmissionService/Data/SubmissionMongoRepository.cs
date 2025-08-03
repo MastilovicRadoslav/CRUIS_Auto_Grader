@@ -1,4 +1,5 @@
 ﻿using Common.Configurations;
+using Common.DTOs;
 using Common.Enums;
 using Common.Models;
 using Common.Repositories;
@@ -53,5 +54,4 @@ public class SubmissionMongoRepository : ISubmissionRepository
 
         return result;
     }
-
 }

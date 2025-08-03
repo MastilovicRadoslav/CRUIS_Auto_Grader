@@ -4,6 +4,7 @@ using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
 using System.Text;
+using WebApi.Hubs;
 
 namespace WebApi
 {
@@ -29,6 +30,18 @@ namespace WebApi
                     {
                         var builder = WebApplication.CreateBuilder();
 
+                        builder.Services.AddCors(options =>
+                        {
+                            options.AddDefaultPolicy(policy =>
+                            {
+                                policy.WithOrigins("http://localhost:5173") // ili adresa frontend aplikacije
+                                      .AllowAnyHeader()
+                                      .AllowAnyMethod()
+                                      .AllowCredentials(); // OVO JE KLJUČNO za SignalR
+                            });
+                        });
+
+
                         builder.Services.AddSingleton<StatelessServiceContext>(serviceContext);
 
                         builder.Services.AddAuthentication("Bearer")
@@ -48,6 +61,10 @@ namespace WebApi
 
                         // Dodaj potrebne servise
                         builder.Services.AddCors();
+
+                        // SignalR
+                        builder.Services.AddSignalR();
+
 
                         // Zbog enum, da radi samo kad se salje tacno Admin, Student..
                         builder.Services.AddControllers()
@@ -74,15 +91,16 @@ namespace WebApi
                         }
 
                         //Cors
-                        app.UseCors(policy =>
-                            policy.AllowAnyOrigin()
-                                  .AllowAnyHeader()
-                                  .AllowAnyMethod());
+                        app.UseCors();
+
 
 
                         app.UseAuthentication();
                         app.UseAuthorization();
                         app.MapControllers();
+
+                        app.MapHub<StatusHub>("/statusHub");
+
 
                         return app;
 

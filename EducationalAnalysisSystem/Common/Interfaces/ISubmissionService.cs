@@ -20,8 +20,6 @@ namespace Common.Interfaces
 
         [OperationContract]
         Task<List<SubmittedWork>> GetSubmissionsByStatusAsync(WorkStatus status); // Da vidi sve radove sa Statusom
-
-
     }
 
 }

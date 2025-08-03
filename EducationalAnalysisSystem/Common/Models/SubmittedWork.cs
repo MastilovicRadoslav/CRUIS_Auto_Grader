@@ -24,8 +24,12 @@ namespace Common.Models
 
         [DataMember]
         public string Title { get; set; } = string.Empty;
+
         [DataMember]
         public string Content { get; set; } = string.Empty;
+
+        [DataMember]
+        public TimeSpan EstimatedAnalysisTime { get; set; }
 
         [DataMember]
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;

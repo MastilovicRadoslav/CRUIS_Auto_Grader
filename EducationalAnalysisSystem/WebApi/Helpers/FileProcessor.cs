@@ -4,7 +4,6 @@ using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using System.IO.Compression;
 
-
 namespace WebApi.Helpers
 {
     public static class FileProcessor
@@ -23,6 +22,11 @@ namespace WebApi.Helpers
                 ".pdf" => ExtractTextFromPdf(tempPath),
                 ".docx" => ExtractTextFromDocx(tempPath),
                 ".zip" => ExtractFromZip(tempPath),
+
+                // Dodati formati za kod i markup fajlove
+                ".cs" or ".cpp" or ".py" or ".java" or ".js" or ".ts" or ".html" or ".css"
+                    => await File.ReadAllTextAsync(tempPath),
+
                 _ => throw new NotSupportedException("Unsupported file type.")
             };
         }
@@ -60,20 +64,29 @@ namespace WebApi.Helpers
             foreach (var file in Directory.GetFiles(tempExtractDir, "*.*", SearchOption.AllDirectories))
             {
                 var ext = Path.GetExtension(file).ToLower();
+                var fileName = Path.GetFileName(file);
 
                 try
                 {
-                    extractedText.AppendLine(ext switch
+                    string content = ext switch
                     {
                         ".txt" => File.ReadAllText(file),
                         ".pdf" => ExtractTextFromPdf(file),
                         ".docx" => ExtractTextFromDocx(file),
-                        _ => string.Empty
-                    });
+                        ".cs" or ".cpp" or ".py" or ".java" or ".js" or ".ts" or ".html" or ".css" => File.ReadAllText(file),
+                        _ => null
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(content))
+                    {
+                        extractedText.AppendLine($"--- {fileName} ---");
+                        extractedText.AppendLine(content);
+                        extractedText.AppendLine(); // prazna linija između fajlova
+                    }
                 }
                 catch
                 {
-                    // ignorisati fajlove koji ne mogu da se parsiraju
+                    // Ignorisati fajlove koji ne mogu da se parsiraju
                 }
             }
 

@@ -10,10 +10,11 @@ namespace Common.DTOs
         public Guid StudentId { get; set; }
         [DataMember]
         public string Title { get; set; } = string.Empty;
+        
         [DataMember]
         public string Content { get; set; } = string.Empty;
-        [DataMember]
-        public AnalysisResultDto Analysis { get; set; } = new();
+
+
     }
 
 }
