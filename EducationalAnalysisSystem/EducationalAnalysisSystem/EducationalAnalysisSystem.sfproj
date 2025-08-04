@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EvaluationService\EvaluationService.csproj" />
+    <ProjectReference Include="..\ProgressService\ProgressService.csproj" />
     <ProjectReference Include="..\SubmissionService\SubmissionService.csproj" />
     <ProjectReference Include="..\UserService\UserService.csproj" />
     <ProjectReference Include="..\WebApi\WebApi.csproj">

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubmissionService", "Submis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvaluationService", "EvaluationService\EvaluationService.csproj", "{0CD611A3-1419-48EE-8159-5627EB927D56}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgressService", "ProgressService\ProgressService.csproj", "{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,14 @@ Global
 		{0CD611A3-1419-48EE-8159-5627EB927D56}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0CD611A3-1419-48EE-8159-5627EB927D56}.Release|x64.ActiveCfg = Release|Any CPU
 		{0CD611A3-1419-48EE-8159-5627EB927D56}.Release|x64.Build.0 = Release|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Debug|x64.Build.0 = Debug|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Release|x64.ActiveCfg = Release|Any CPU
+		{AA445849-AECD-46A6-B8AF-2C2C54FDFC3F}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

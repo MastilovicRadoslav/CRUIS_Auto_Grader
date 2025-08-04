@@ -5,10 +5,13 @@ using Common.Interfaces;
 using Common.Models;
 using EvaluationService.Data;
 using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
+using System.Net.Http.Json;
 
 
 namespace EvaluationService
@@ -76,6 +79,22 @@ namespace EvaluationService
                     await feedbackDict.AddOrUpdateAsync(tx, feedback.WorkId, feedback, (key, oldValue) => feedback);
                     await tx.CommitAsync();
                 }
+
+                try
+                {
+                    var httpClient = new HttpClient();
+                    var progressNotification = new ProgressUpdateDto
+                    {
+                        StudentId = feedback.StudentId
+                    };
+
+                    await httpClient.PostAsJsonAsync("http://localhost:8285/api/evaluation/notify-progress-change", progressNotification);
+                }
+                catch (Exception ex)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this.Context, "Progress SignalR notification failed: " + ex.Message);
+                }
+
 
                 return feedback;
             }
@@ -225,7 +244,7 @@ namespace EvaluationService
             return feedbacks;
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsAsync()
+        public async Task<EvaluationStatisticsDto> GetStatisticsAsync() // Izvlacenje statistike svih feedback-ova za sve studente
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
             var result = new EvaluationStatisticsDto();
@@ -244,9 +263,9 @@ namespace EvaluationService
                     var grade = feedback.Grade;
                     allGrades.Add(grade);
 
-                    if (grade >= 90) result.Above90++;
-                    else if (grade >= 70) result.Between70And89++;
-                    else result.Below70++;
+                    if (grade >= 90) result.Above9++;
+                    else if (grade >= 70) result.Between7And8++;
+                    else result.Below7++;
 
                     foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
                     {
@@ -265,13 +284,12 @@ namespace EvaluationService
             return result;
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId)
+        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId) // Radi
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
             var result = new EvaluationStatisticsDto();
 
-            var allGrades = new List<int>();
-            var issueCounter = new Dictionary<string, int>();
+            var feedbackList = new List<FeedbackDto>();
 
             using (var tx = StateManager.CreateTransaction())
             {
@@ -281,35 +299,24 @@ namespace EvaluationService
                 while (await enumerator.MoveNextAsync(CancellationToken.None))
                 {
                     var feedback = enumerator.Current.Value;
-
-                    if (feedback.StudentId != studentId)
-                        continue;
-
-                    var grade = feedback.Grade;
-                    allGrades.Add(grade);
-
-                    if (grade >= 90) result.Above90++;
-                    else if (grade >= 70) result.Between70And89++;
-                    else result.Below70++;
-
-                    foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
+                    if (feedback.StudentId == studentId)
                     {
-                        if (issueCounter.ContainsKey(issue))
-                            issueCounter[issue]++;
-                        else
-                            issueCounter[issue] = 1;
+                        feedbackList.Add(feedback);
                     }
                 }
             }
 
-            result.TotalWorks = allGrades.Count;
-            result.AverageGrade = allGrades.Any() ? allGrades.Average() : 0;
-            result.MostCommonIssues = issueCounter;
+            var progressService = ServiceProxy.Create<IProgressService>(
+                new Uri("fabric:/EducationalAnalysisSystem/ProgressService")
+            );
+
+            result = await progressService.AnalyzeProgressAsync(feedbackList);
 
             return result;
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request)
+
+        public async Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request) //// Dobavljanje statistike za sve feedback na osnovu date-range
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
             var result = new EvaluationStatisticsDto();
@@ -331,9 +338,9 @@ namespace EvaluationService
                         var grade = feedback.Grade;
                         grades.Add(grade);
 
-                        if (grade >= 90) result.Above90++;
-                        else if (grade >= 70) result.Between70And89++;
-                        else result.Below70++;
+                        if (grade >= 90) result.Above9++;
+                        else if (grade >= 70) result.Between7And8++;
+                        else result.Below7++;
 
                         foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
                         {
