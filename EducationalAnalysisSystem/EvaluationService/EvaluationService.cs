@@ -45,9 +45,9 @@ namespace EvaluationService
                 analysis = new AnalysisResultDto
                 {
                     Grade = 0,
-                    Issues = new List<string> { "Analysis failed." },
-                    Suggestions = new List<string> { "Try again later." },
-                    Summary = "LLM service is not responding or returned invalid result."
+                    IdentifiedErrors = new List<string> { "Analysis failed." },
+                    ImprovementSuggestions = new List<string> { "Try again later." },
+                    FurtherRecommendations = new List<string> { "Please consult a professor or teaching assistant for manual review." }
                 };
             }
 
@@ -58,11 +58,12 @@ namespace EvaluationService
                 StudentId = work.StudentId,
                 StudentName = work.StudentName,
                 Grade = analysis.Grade,
-                Issues = analysis.Issues,
-                Suggestions = analysis.Suggestions,
-                Summary = analysis.Summary,
+                IdentifiedErrors = analysis.IdentifiedErrors,
+                ImprovementSuggestions = analysis.ImprovementSuggestions,
+                FurtherRecommendations = analysis.FurtherRecommendations,
                 EvaluatedAt = DateTime.UtcNow
             };
+
 
             try
             {
@@ -247,7 +248,7 @@ namespace EvaluationService
                     else if (grade >= 70) result.Between70And89++;
                     else result.Below70++;
 
-                    foreach (var issue in feedback.Issues ?? new List<string>())
+                    foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
                     {
                         if (issueCounter.ContainsKey(issue))
                             issueCounter[issue]++;
@@ -291,7 +292,7 @@ namespace EvaluationService
                     else if (grade >= 70) result.Between70And89++;
                     else result.Below70++;
 
-                    foreach (var issue in feedback.Issues ?? new List<string>())
+                    foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
                     {
                         if (issueCounter.ContainsKey(issue))
                             issueCounter[issue]++;
@@ -334,7 +335,7 @@ namespace EvaluationService
                         else if (grade >= 70) result.Between70And89++;
                         else result.Below70++;
 
-                        foreach (var issue in feedback.Issues ?? new List<string>())
+                        foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
                         {
                             if (issues.ContainsKey(issue)) issues[issue]++;
                             else issues[issue] = 1;

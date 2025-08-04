@@ -20,7 +20,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpPost("submit")]
-        public async Task<IActionResult> SubmitWork([FromForm] IFormFile file, [FromForm] string title, [FromForm] Guid studentId)
+        public async Task<IActionResult> SubmitWork([FromForm] IFormFile file, [FromForm] string title, [FromForm] Guid studentId) // Testirano
         {
             if (file == null || file.Length == 0)
                 return BadRequest(new { error = "No file uploaded." });
@@ -56,7 +56,7 @@ namespace WebApi.Controllers
 
 
         [HttpPost("notify-status-change")]
-        public async Task<IActionResult> NotifyStatusChange([FromBody] StatusChangeNotificationDto dto)
+        public async Task<IActionResult> NotifyStatusChange([FromBody] StatusChangeNotificationDto dto) // Testirano
         {
             var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<StatusHub>>();
             await hubContext.Clients.All.SendAsync("StatusChanged", dto);
@@ -67,7 +67,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyWorks() //Testirano
+        public async Task<IActionResult> GetMyWorks() // Testirano
         {
             var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -88,7 +88,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Professor")]
         [HttpGet("student/{studentId}")]
-        public async Task<IActionResult> GetWorksByStudentId(Guid studentId)
+        public async Task<IActionResult> GetWorksByStudentId(Guid studentId) // Zaobisao sam tako sto sam filtrirao po imenu i ona vidim njegove radove bez slanje Endpoint
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
@@ -116,7 +116,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Professor")]
         [HttpGet("by-status")]
-        public async Task<IActionResult> GetByStatus([FromQuery] WorkStatus status)
+        public async Task<IActionResult> GetByStatus([FromQuery] WorkStatus status) // Zaobisao sam tako sto sam filtrirao po datumu ranga i ona vidim njegove radove bez slanje Endpoint
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
