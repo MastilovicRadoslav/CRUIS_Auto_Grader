@@ -17,7 +17,7 @@ const FeedbackModal = ({ visible, onClose, workId }) => {
     const fetchFeedback = async () => {
       setLoading(true);
       try {
-        const result = await getFeedbackByWorkId(workId); 
+        const result = await getFeedbackByWorkId(workId);
         setFeedback(result);
         setError("");
       } catch (err) {
@@ -52,22 +52,27 @@ const FeedbackModal = ({ visible, onClose, workId }) => {
           <Title level={5}>Grade</Title>
           <Paragraph>{feedback.grade}</Paragraph>
 
-          <Title level={5}>Summary</Title>
-          <Paragraph>{feedback.summary}</Paragraph>
-
-          <Title level={5}>Issues</Title>
+          <Title level={5}>Identified Errors</Title>
           <Paragraph>
-            {feedback.issues && feedback.issues.length > 0
-              ? feedback.issues.join(", ")
-              : "No issues."}
+            {feedback.identifiedErrors && feedback.identifiedErrors.length > 0
+              ? feedback.identifiedErrors.join(", ")
+              : "No identified errors."}
           </Paragraph>
 
-          <Title level={5}>Suggestions</Title>
+          <Title level={5}>Improvement Suggestions</Title>
           <Paragraph>
-            {feedback.suggestions && feedback.suggestions.length > 0
-              ? feedback.suggestions.join(", ")
+            {feedback.improvementSuggestions && feedback.improvementSuggestions.length > 0
+              ? feedback.improvementSuggestions.join(", ")
               : "No suggestions."}
           </Paragraph>
+
+          <Title level={5}>Further Recommendations</Title>
+          <Paragraph>
+            {feedback.furtherRecommendations && feedback.furtherRecommendations.length > 0
+              ? feedback.furtherRecommendations.join(", ")
+              : "No recommendations."}
+          </Paragraph>
+
 
           <Title level={5}>Professor's Comment</Title>
           <Paragraph>
