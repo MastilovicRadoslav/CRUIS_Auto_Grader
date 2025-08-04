@@ -2,9 +2,11 @@
 using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
 using WebApi.Helpers;
+using WebApi.Hubs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -124,9 +126,8 @@ public class EvaluationController : ControllerBase
     }
 
     [Authorize]
-    [AuthorizeRole("Professor")]
     [HttpGet("statistics/student/{studentId}")]
-    public async Task<IActionResult> GetStatisticsByStudentId(Guid studentId) // Izvlacenje statistike svih feedback-ova za nekog studenta
+    public async Task<IActionResult> GetStatisticsByStudentId(Guid studentId) // Dobavljanje statistike za Feedback za jednog studenta na osnovu njegovog ID
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -137,10 +138,20 @@ public class EvaluationController : ControllerBase
         return Ok(stats);
     }
 
+    [HttpPost("notify-progress-change")]
+    public async Task<IActionResult> NotifyProgressChange([FromBody] ProgressUpdateDto progress)
+    {
+        var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<StatusHub>>();
+        await hubContext.Clients.All.SendAsync("ProgressUpdated", progress.StudentId);
+        return Ok();
+    }
+
+
+
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpPost("statistics/date-range")]
-    public async Task<IActionResult> GetStatisticsByDateRange([FromBody] DateRangeRequest request) // Testirano radi
+    public async Task<IActionResult> GetStatisticsByDateRange([FromBody] DateRangeRequest request) // Dobavljanje statistike za sve feedback na osnovu date-range
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),

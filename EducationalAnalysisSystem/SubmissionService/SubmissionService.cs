@@ -176,9 +176,7 @@ namespace SubmissionService
 
             return result;
         }
-
-
-        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId)
+        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId) // Dobavljanje svih radova na osnovu ID studenta
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
             var result = new List<SubmittedWork>();
@@ -315,6 +313,7 @@ namespace SubmissionService
 
             return TimeSpan.FromMinutes(5); // veći fajlovi
         }
+
 
     }
 }
