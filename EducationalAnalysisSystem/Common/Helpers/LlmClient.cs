@@ -15,9 +15,12 @@ namespace Common.Helpers
             var request = new
             {
                 model = "gemma:2b",
-                prompt = $"Analyze the following educational work and return JSON with fields: Grade (1-10), Issues (list), Suggestions (list), Summary (text):\n\n{content}",
+                prompt = $"Return ONLY valid JSON with EXACTLY these fields: " +
+                         "Grade (int 1-10), IdentifiedErrors (list of strings), ImprovementSuggestions (list of strings), FurtherRecommendations (list of strings). " +
+                         $"Analyze the following educational work:\n\n{content}",
                 stream = false
             };
+
 
             var response = await httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", request);
 
@@ -49,9 +52,9 @@ namespace Common.Helpers
                 return new AnalysisResultDto
                 {
                     Grade = 0,
-                    Issues = new List<string> { "LLM response could not be parsed." },
-                    Suggestions = new List<string> { "Please review manually." },
-                    Summary = "LLM returned unexpected or malformed output."
+                    IdentifiedErrors = new List<string> { "Analysis failed." },
+                    ImprovementSuggestions = new List<string> { "Try again later." },
+                    FurtherRecommendations = new List<string> { "Please consult a professor or teaching assistant for manual review." }
                 };
             }
         }

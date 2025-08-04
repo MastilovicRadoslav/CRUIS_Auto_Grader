@@ -14,10 +14,10 @@ namespace Common.DTOs
         public Guid StudentId { get; set; }
         public string StudentName { get; set; } = string.Empty;
 
-        public int Grade { get; set; }
-        public List<string> Issues { get; set; } = new();
-        public List<string> Suggestions { get; set; } = new();
-        public string Summary { get; set; } = string.Empty;
+        public int Grade { get; set; } // Ocjena rada
+        public List<string> IdentifiedErrors { get; set; } = new();
+        public List<string> ImprovementSuggestions { get; set; } = new();
+        public List<string> FurtherRecommendations { get; set; } = new();
         public string? ProfessorComment { get; set; }
         public DateTime EvaluatedAt { get; set; } = DateTime.UtcNow;
 
