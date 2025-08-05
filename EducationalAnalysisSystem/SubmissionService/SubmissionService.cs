@@ -83,7 +83,8 @@ namespace SubmissionService
                         NewStatus = newSubmission.Status,
                         Title = newSubmission.Title,
                         EstimatedAnalysisTime = newSubmission.EstimatedAnalysisTime,
-                        SubmittedAt = newSubmission.SubmittedAt
+                        SubmittedAt = newSubmission.SubmittedAt,
+                        StudentName = newSubmission.StudentName
                     };
 
                     await httpClient.PostAsJsonAsync("http://localhost:8285/api/submission/notify-status-change", notification);
@@ -136,7 +137,9 @@ namespace SubmissionService
                         NewStatus = newSubmission.Status,
                         Title = newSubmission.Title,
                         EstimatedAnalysisTime = newSubmission.EstimatedAnalysisTime,
-                        SubmittedAt = newSubmission.SubmittedAt
+                        SubmittedAt = newSubmission.SubmittedAt,
+                        StudentName = newSubmission.StudentName
+
                     };
 
 
@@ -158,7 +161,7 @@ namespace SubmissionService
         }
 
 
-        public async Task<List<SubmittedWork>> GetAllSubmissionsAsync()
+        public async Task<List<SubmittedWork>> GetAllSubmissionsAsync() //
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
             var result = new List<SubmittedWork>();
@@ -176,7 +179,7 @@ namespace SubmissionService
 
             return result;
         }
-        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId) // Dobavljanje svih radova na osnovu ID studenta
+        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId) // Testirano - Dobavljanje svih radova na osnovu ID studenta - Student
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
             var result = new List<SubmittedWork>();

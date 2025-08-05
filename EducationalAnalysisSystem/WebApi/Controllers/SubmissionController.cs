@@ -18,7 +18,6 @@ namespace WebApi.Controllers
     public class SubmissionController : ControllerBase
     {
         [Authorize]
-        [AuthorizeRole("Student")]
         [HttpPost("submit")]
         public async Task<IActionResult> SubmitWork([FromForm] IFormFile file, [FromForm] string title, [FromForm] Guid studentId) // Testirano
         {
@@ -67,7 +66,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyWorks() // Testirano
+        public async Task<IActionResult> GetMyWorks() // Testirano - student
         {
             var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 

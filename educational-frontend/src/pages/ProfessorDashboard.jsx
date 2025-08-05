@@ -1,21 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchAllSubmissions } from "../services/submissionService";
-import {
-  List,
-  Card,
-  Typography,
-  Spin,
-  message,
-  Button,
-  Input,
-  Select,
-  Row,
-  Col,
-  Modal,
-} from "antd";
+import { List, Card, Typography, Spin, message, Button, Input, Select, Row, Col, Modal, } from "antd";
 import ProfessorFeedbackModal from "../components/ProfessorFeedbackModal";
 import DateRangeStats from "../components/DateRangeStats";
+import { useSignalR } from "../services/useSignalR";
+
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -59,6 +49,40 @@ const ProfessorDashboard = () => {
     loadSubmissions();
   }, [token]);
 
+  useSignalR(
+    (data) => {
+      setSubmissions((prev) => {
+        const found = prev.find((s) => s.id === data.workId);
+        if (found) {
+          return prev.map((s) =>
+            s.id === data.workId
+              ? {
+                ...s,
+                status: data.newStatus,
+                estimatedAnalysisTime: data.estimatedAnalysisTime,
+                submittedAt: data.submittedAt,
+              }
+              : s
+          );
+        } else {
+          return [
+            {
+              id: data.workId,
+              title: data.title,
+              status: data.newStatus,
+              estimatedAnalysisTime: data.estimatedAnalysisTime,
+              submittedAt: data.submittedAt,
+              studentName: data.studentName || "Unknown",
+            },
+            ...prev,
+          ];
+        }
+      });
+    },
+    null // Profesor ne treba drugi callback za progress
+  );
+
+
   const filteredSubmissions = submissions.filter((item) => {
     const nameMatch = item.studentName.toLowerCase().includes(searchTerm.toLowerCase());
     const statusMatch = statusFilter ? item.status === statusFilter : true;
@@ -79,6 +103,20 @@ const ProfessorDashboard = () => {
       </div>
     );
   }
+
+  const formatStatus = (status) => {
+    const statusMap = {
+      0: "Pending",
+      1: "InProgress",
+      2: "Completed",
+      3: "Rejected",
+      InProgress: "In Progress",
+      Completed: "Completed",
+      Rejected: "Rejected",
+      Pending: "Pending",
+    };
+    return statusMap[status] || status;
+  };
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -123,8 +161,7 @@ const ProfessorDashboard = () => {
           <List.Item>
             <Card title={`📝 ${item.title}`}>
               <p><strong>Student:</strong> {item.studentName}</p>
-              <p><strong>Status:</strong> {item.status}</p>
-              <p><strong>Content:</strong> {item.content}</p>
+              <p><strong>Status:</strong> {formatStatus(item.status)}</p>
               <p>
                 <strong>Submitted At:</strong>{" "}
                 {new Date(item.submittedAt).toLocaleString()}
