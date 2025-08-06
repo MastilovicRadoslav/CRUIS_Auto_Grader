@@ -1,5 +1,6 @@
 ﻿using Common.DTOs;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 
@@ -8,61 +9,89 @@ namespace Common.Helpers
 {
     public static class LlmClient
     {
+        private static readonly string apiKey = "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";
+        private static readonly string groqUrl = "https://api.groq.com/openai/v1/chat/completions";
+        private static readonly string model = "meta-llama/llama-4-scout-17b-16e-instruct";
+
         public static async Task<AnalysisResultDto> AnalyzeAsync(string content)
         {
             using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-            var request = new
+            var requestBody = new
             {
-                model = "gemma:2b",
-                prompt = $"Return ONLY valid JSON with EXACTLY these fields: " +
-                         "Grade (int 1-10), IdentifiedErrors (list of strings), ImprovementSuggestions (list of strings), FurtherRecommendations (list of strings). " +
-                         $"Analyze the following educational work:\n\n{content}",
-                stream = false
+                model = model,
+                messages = new[]
+                {
+                    new { role = "system", content = "You are an educational assistant that analyzes student submissions and gives structured JSON feedback." },
+                    new
+                    {
+                        role = "user",
+                        content = $"Return ONLY valid JSON with EXACTLY these fields: " +
+                                  "Grade (int 1-10), IdentifiedErrors (list of strings), ImprovementSuggestions (list of strings), FurtherRecommendations (list of strings). " +
+                                  $"Analyze the following educational work:\n\n{content}"
+                    }
+                },
+                temperature = 0.2
             };
 
-
-            var response = await httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", request);
+            var response = await httpClient.PostAsJsonAsync(groqUrl, requestBody);
 
             if (!response.IsSuccessStatusCode)
-                throw new Exception("LLM analysis failed with status: " + response.StatusCode);
+                throw new Exception("❌ Groq API failed: " + response.StatusCode);
 
-            var result = await response.Content.ReadFromJsonAsync<OllamaResponse>();
+            var json = await response.Content.ReadAsStringAsync();
+            var completion = JsonConvert.DeserializeObject<GroqResponse>(json);
+            var answer = completion?.choices?.FirstOrDefault()?.message?.content;
 
-            if (string.IsNullOrWhiteSpace(result?.response))
-                throw new Exception("LLM response is empty or null.");
+            if (string.IsNullOrWhiteSpace(answer))
+                throw new Exception("❌ Odgovor je prazan.");
+
+            // ✅ Očisti Markdown code block ako postoji
+            var cleanedAnswer = answer.Trim();
+            if (cleanedAnswer.StartsWith("```"))
+            {
+                cleanedAnswer = cleanedAnswer.Trim('`').Trim(); // uklanja ``` i whitespace
+            }
 
             try
             {
-                var analysis = JsonConvert.DeserializeObject<AnalysisResultDto>(result.response);
+                var analysis = JsonConvert.DeserializeObject<AnalysisResultDto>(cleanedAnswer);
 
                 if (analysis == null || analysis.Grade == 0)
-                    throw new Exception("Deserialization succeeded but result is incomplete or invalid.");
+                    throw new Exception("✅ JSON je stigao, ali je struktura nepotpuna.");
 
                 return analysis;
             }
             catch (Exception ex)
             {
-                // Loguj sirovi odgovor
-                Console.WriteLine("❌ LLM returned invalid or incomplete JSON:");
-                Console.WriteLine(result.response);
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("❌ Groq response is not valid JSON:");
+                Console.WriteLine(answer);
+                Console.WriteLine("Greška: " + ex.Message);
 
-                // Vrati fallback rezultat
                 return new AnalysisResultDto
                 {
                     Grade = 0,
                     IdentifiedErrors = new List<string> { "Analysis failed." },
                     ImprovementSuggestions = new List<string> { "Try again later." },
-                    FurtherRecommendations = new List<string> { "Please consult a professor or teaching assistant for manual review." }
+                    FurtherRecommendations = new List<string> { "Please consult a professor or assistant for review." }
                 };
             }
         }
 
-
-        private class OllamaResponse
+        private class GroqResponse
         {
-            public string response { get; set; } = string.Empty;
+            public List<Choice> choices { get; set; }
+
+            public class Choice
+            {
+                public Message message { get; set; }
+            }
+
+            public class Message
+            {
+                public string content { get; set; }
+            }
         }
     }
 }
