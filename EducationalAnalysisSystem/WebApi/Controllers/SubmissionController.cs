@@ -66,7 +66,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Student")]
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyWorks() // Testirano - student
+        public async Task<IActionResult> GetMyWorks() // Testirano - dobavljanje svih radova za ulogovanog studetna
         {
             var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -101,7 +101,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Professor")]
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllSubmissions() // Testirano
+        public async Task<IActionResult> GetAllSubmissions() // Testirano - profesorovo dobavljanje svih radova za sve studente
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),

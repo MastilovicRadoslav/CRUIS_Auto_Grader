@@ -13,7 +13,7 @@ namespace Common.Helpers
         private static readonly string groqUrl = "https://api.groq.com/openai/v1/chat/completions";
         private static readonly string model = "meta-llama/llama-4-scout-17b-16e-instruct";
 
-        public static async Task<AnalysisResultDto> AnalyzeAsync(string content)
+        public static async Task<AnalysisResultDto> AnalyzeAsync(string content, string additionalInstructions = "")
         {
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
@@ -27,11 +27,11 @@ namespace Common.Helpers
                     new
                     {
                         role = "user",
-                        content = $"Return ONLY valid JSON with EXACTLY these fields: " +
-                                  "Grade (int 1-10), IdentifiedErrors (list of strings), ImprovementSuggestions (list of strings), FurtherRecommendations (list of strings). " +
-                                  $"Analyze the following educational work:\n\n{content}"
-                    }
-                },
+                        content = string.IsNullOrWhiteSpace(additionalInstructions)
+                            ? $"Return ONLY valid JSON with EXACTLY these fields: Grade (int 1-10), IdentifiedErrors (list of strings), ImprovementSuggestions (list of strings), FurtherRecommendations (list of strings). Analyze the following educational work:\n\n{content}"
+                            : $"Return ONLY valid JSON with EXACTLY these fields: Grade (int 1-10), IdentifiedErrors (list of strings), ImprovementSuggestions (list of strings), FurtherRecommendations (list of strings). Additional instructions: {additionalInstructions}\n\nAnalyze the following educational work:\n\n{content}"
+                                }
+                            },
                 temperature = 0.2
             };
 

@@ -106,7 +106,7 @@ namespace EvaluationService
         }
 
 
-        public async Task<bool> AddProfessorCommentAsync(AddProfessorCommentRequest request)
+        public async Task<bool> AddProfessorCommentAsync(AddProfessorCommentRequest request) // Dodavanje komentara od strane profesora na Feedback
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
 
@@ -214,7 +214,7 @@ namespace EvaluationService
             return result;
         }
 
-        public async Task<FeedbackDto?> GetFeedbackByWorkIdAsync(Guid workId)
+        public async Task<FeedbackDto?> GetFeedbackByWorkIdAsync(Guid workId) // Testirano
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
 
@@ -225,7 +225,7 @@ namespace EvaluationService
             }
         }
 
-        public async Task<List<FeedbackDto>> GetAllFeedbacksAsync()
+        public async Task<List<FeedbackDto>> GetAllFeedbacksAsync() 
         {
             var feedbacks = new List<FeedbackDto>();
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
@@ -284,7 +284,7 @@ namespace EvaluationService
             return result;
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId) // Radi
+        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId) // Dobavljanje statistike za jednog studenta iz ProgressService
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
             var result = new EvaluationStatisticsDto();
@@ -356,6 +356,89 @@ namespace EvaluationService
             result.MostCommonIssues = issues;
 
             return result;
+        }
+
+        public async Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request)
+        {
+            var submissionService = ServiceProxy.Create<ISubmissionService>(
+                new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
+                new ServicePartitionKey(0)
+            );
+
+            var submittedWork = await submissionService.GetWorkByIdAsync(request.WorkId);
+            if (submittedWork == null)
+                return null;
+
+            AnalysisResultDto? analysis = null;
+
+            try
+            {
+                analysis = await LlmClient.AnalyzeAsync(submittedWork.Content, request.Instructions);
+            }
+            catch
+            {
+                analysis = new AnalysisResultDto
+                {
+                    Grade = 0,
+                    IdentifiedErrors = new List<string> { "Analysis failed." },
+                    ImprovementSuggestions = new List<string> { "Try again later." },
+                    FurtherRecommendations = new List<string> { "Consult a professor for detailed analysis." }
+                };
+            }
+
+            // 🔁 Čitanje prethodnog feedbacka iz ReliableDictionary da sačuvaš ProfessorComment
+            var feedbackDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+            FeedbackDto? previousFeedback = null;
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await feedbackDict.TryGetValueAsync(tx, submittedWork.Id);
+                if (result.HasValue)
+                    previousFeedback = result.Value;
+            }
+
+            // 🆕 Formiraj novi feedback sa sačuvanim prethodnim komentarom
+            var feedback = new FeedbackDto
+            {
+                WorkId = submittedWork.Id,
+                Title = submittedWork.Title,
+                StudentId = submittedWork.StudentId,
+                StudentName = submittedWork.StudentName,
+                Grade = analysis.Grade,
+                IdentifiedErrors = analysis.IdentifiedErrors,
+                ImprovementSuggestions = analysis.ImprovementSuggestions,
+                FurtherRecommendations = analysis.FurtherRecommendations,
+                ProfessorComment = previousFeedback?.ProfessorComment, // sačuvan komentar
+                EvaluatedAt = DateTime.UtcNow
+            };
+
+            // 📝 Upis u ReliableDictionary
+            using (var tx = StateManager.CreateTransaction())
+            {
+                await feedbackDict.SetAsync(tx, feedback.WorkId, feedback);
+                await tx.CommitAsync();
+            }
+
+            // 📝 Update Mongo
+            await _feedbackRepo.UpdateAsync(feedback.WorkId, feedback);
+
+            // 🔔 SignalR notifikacija - obavijesti o napretku
+            try
+            {
+                var httpClient = new HttpClient();
+                var progressNotification = new ProgressUpdateDto
+                {
+                    StudentId = feedback.StudentId
+                };
+
+                await httpClient.PostAsJsonAsync("http://localhost:8285/api/evaluation/notify-progress-change", progressNotification);
+            }
+            catch (Exception ex)
+            {
+                ServiceEventSource.Current.ServiceMessage(this.Context, "Progress SignalR notification failed: " + ex.Message);
+            }
+
+            return feedback;
         }
 
     }

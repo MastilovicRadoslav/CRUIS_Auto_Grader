@@ -37,7 +37,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Student")]
     [HttpGet("feedbacks/my")]
-    public async Task<IActionResult> GetMyFeedbacks() // Nijesam upotrijebio 
+    public async Task<IActionResult> GetMyFeedbacks() // Nijesam upotrijebio - Dobavljanje svig Feedback za ulogogvanog studenta
     {
         var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -66,7 +66,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpPost("professor-comment")]
-    public async Task<IActionResult> AddProfessorComment([FromBody] AddProfessorCommentRequest request) // Testirano
+    public async Task<IActionResult> AddProfessorComment([FromBody] AddProfessorCommentRequest request) // Testirano - Dodavanje komentara od strane profesora na Feedback
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -100,7 +100,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpGet("all-feedbacks")]
-    public async Task<IActionResult> GetAllFeedbacks() //Ne treba mi
+    public async Task<IActionResult> GetAllFeedbacks() 
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -139,7 +139,7 @@ public class EvaluationController : ControllerBase
     }
 
     [HttpPost("notify-progress-change")]
-    public async Task<IActionResult> NotifyProgressChange([FromBody] ProgressUpdateDto progress)
+    public async Task<IActionResult> NotifyProgressChange([FromBody] ProgressUpdateDto progress) // SignalR za statistiku studenta na osnovu Feedback-a
     {
         var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<StatusHub>>();
         await hubContext.Clients.All.SendAsync("ProgressUpdated", progress.StudentId);
@@ -160,5 +160,22 @@ public class EvaluationController : ControllerBase
 
         var stats = await evaluationService.GetStatisticsByDateRangeAsync(request);
         return Ok(stats);
+    }
+
+    [Authorize]
+    [AuthorizeRole("Professor")]
+    [HttpPost("reanalyze")]
+    public async Task<IActionResult> ReAnalyzeWithInstructions([FromBody] ReAnalyzeRequest request)
+    {
+        var evaluationService = ServiceProxy.Create<IEvaluationService>(
+            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+            new ServicePartitionKey(0)
+        );
+
+        var feedback = await evaluationService.ReAnalyzeWithInstructionsAsync(request);
+        if (feedback == null)
+            return NotFound("Work not found.");
+
+        return Ok(feedback);
     }
 }

@@ -161,7 +161,7 @@ namespace SubmissionService
         }
 
 
-        public async Task<List<SubmittedWork>> GetAllSubmissionsAsync() //
+        public async Task<List<SubmittedWork>> GetAllSubmissionsAsync() // Testirano,profesorovo dobavljanje svih radova za sve studente
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
             var result = new List<SubmittedWork>();
@@ -177,9 +177,13 @@ namespace SubmissionService
                 }
             }
 
+            // Sortiranje po SubmittedAt, najnoviji prvi
+            result = result.OrderByDescending(work => work.SubmittedAt).ToList();
+
             return result;
         }
-        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId) // Testirano - Dobavljanje svih radova na osnovu ID studenta - Student
+
+        public async Task<List<SubmittedWork>> GetWorksByStudentIdAsync(Guid studentId) // Testirano, dobavljanje radova na osnovu id studenta.
         {
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
             var result = new List<SubmittedWork>();
@@ -197,6 +201,9 @@ namespace SubmissionService
                     }
                 }
             }
+
+            // Sortiranje po SubmittedAt, najnoviji prvi
+            result = result.OrderByDescending(work => work.SubmittedAt).ToList();
 
             return result;
         }
@@ -300,7 +307,7 @@ namespace SubmissionService
             return result;
         }
 
-        private TimeSpan EstimateAnalysisTime(string content)
+        private TimeSpan EstimateAnalysisTime(string content) // Procjena vremena analize
         {
             if (string.IsNullOrWhiteSpace(content))
                 return TimeSpan.FromMinutes(1); // fallback
@@ -315,6 +322,17 @@ namespace SubmissionService
                 return TimeSpan.FromMinutes(3);
 
             return TimeSpan.FromMinutes(5); // veći fajlovi
+        }
+
+        public async Task<SubmittedWork?> GetWorkByIdAsync(Guid workId)
+        {
+            var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await submissions.TryGetValueAsync(tx, workId);
+                return result.HasValue ? result.Value : null;
+            }
         }
 
 

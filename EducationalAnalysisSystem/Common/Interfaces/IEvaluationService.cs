@@ -31,5 +31,9 @@ namespace Common.Interfaces
 
         [OperationContract]
         Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request); //Statistika evaluacija u zadatom vremenskom opsegu
+
+        [OperationContract]
+        Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request);
+
     }
 }
