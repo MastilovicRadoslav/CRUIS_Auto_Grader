@@ -12,3 +12,16 @@ export const addProfessorComment = async (requestBody, token) => {
   );
   return response.data;
 };
+
+export const reanalyzeSubmission = async (data, token) => {
+  const response = await axios.post(
+    "http://localhost:8285/api/evaluation/reanalyze",
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};

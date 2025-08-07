@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, Typography, Input, Button, Spin, Alert, message } from "antd";
 import { getFeedbackByWorkId } from "../services/submissionService";
-import { addProfessorComment } from "../services/evaluationService";
+import { addProfessorComment, reanalyzeSubmission } from "../services/evaluationService";
 import { useAuth } from "../context/AuthContext";
 
 const { Title, Paragraph } = Typography;
@@ -13,6 +13,7 @@ const ProfessorFeedbackModal = ({ workId, open, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [comment, setComment] = useState("");
+    const [instruction, setInstruction] = useState(""); // ⬅️ instrukcija za re-analizu
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -24,6 +25,7 @@ const ProfessorFeedbackModal = ({ workId, open, onClose }) => {
                 const data = await getFeedbackByWorkId(workId);
                 setFeedback(data);
                 setComment(data.professorComment || "");
+                setInstruction(""); // resetuj instrukciju pri svakom otvaranju
                 setError("");
             } catch (err) {
                 setError("Failed to load feedback.");
@@ -36,20 +38,36 @@ const ProfessorFeedbackModal = ({ workId, open, onClose }) => {
     }, [open, workId, token]);
 
     const handleAddComment = async () => {
-        console.log("Kliknut Save"); // <--- Dodaj ovo
         setSubmitting(true);
         try {
             await addProfessorComment({ workId, comment }, token);
             message.success("Comment saved successfully.");
             onClose();
         } catch (error) {
-            console.error(error); // <--- Loguj grešku
+            console.error(error);
             message.error("Failed to save comment.");
         } finally {
             setSubmitting(false);
         }
     };
 
+    const handleReanalyze = async () => {
+        setSubmitting(true);
+        try {
+            const reanalysisData = {
+                workId: workId,
+                instructions: instruction, // ✅ mora biti "instructions"
+            };
+            await reanalyzeSubmission(reanalysisData, token);
+            message.success("Re-analysis triggered successfully.");
+            onClose();
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to trigger re-analysis.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <Modal
@@ -71,40 +89,58 @@ const ProfessorFeedbackModal = ({ workId, open, onClose }) => {
 
                     <Title level={5}>Student Name</Title>
                     <Paragraph>{feedback.studentName || "Unknown"}</Paragraph>
+
                     <Title level={5}>Grade</Title>
                     <Paragraph>{feedback.grade}</Paragraph>
 
                     <Title level={5}>Identified Errors</Title>
                     <Paragraph>
-                        {feedback.identifiedErrors && feedback.identifiedErrors.length > 0
+                        {feedback.identifiedErrors?.length
                             ? feedback.identifiedErrors.join(", ")
                             : "No identified errors."}
                     </Paragraph>
 
                     <Title level={5}>Improvement Suggestions</Title>
                     <Paragraph>
-                        {feedback.improvementSuggestions && feedback.improvementSuggestions.length > 0
+                        {feedback.improvementSuggestions?.length
                             ? feedback.improvementSuggestions.join(", ")
                             : "No suggestions."}
                     </Paragraph>
 
                     <Title level={5}>Further Recommendations</Title>
                     <Paragraph>
-                        {feedback.furtherRecommendations && feedback.furtherRecommendations.length > 0
+                        {feedback.furtherRecommendations?.length
                             ? feedback.furtherRecommendations.join(", ")
                             : "No recommendations."}
                     </Paragraph>
-
 
                     <Title level={5}>Professor's Comment</Title>
                     <TextArea
                         rows={4}
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        placeholder="Add or update your comment here"
+                        placeholder="Add or update your general comment"
                     />
 
-                    <Title level={5}>Evaluated At</Title>
+                    <Title level={5} style={{ marginTop: "1.5rem" }}>Instruction for Re-analysis</Title>
+                    <TextArea
+                        rows={4}
+                        value={instruction}
+                        onChange={(e) => setInstruction(e.target.value)}
+                        placeholder="Enter custom instruction for LLM re-analysis"
+                    />
+
+                    <Button
+                        type="primary"
+                        danger
+                        style={{ marginTop: "1rem" }}
+                        onClick={handleReanalyze}
+                        loading={submitting}
+                    >
+                        Re-analyze with Instruction
+                    </Button>
+
+                    <Title level={5} style={{ marginTop: "1.5rem" }}>Evaluated At</Title>
                     <Paragraph>
                         {feedback.evaluatedAt
                             ? new Date(feedback.evaluatedAt).toLocaleString()
