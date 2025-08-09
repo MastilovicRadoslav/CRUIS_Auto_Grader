@@ -23,12 +23,12 @@ const SubmitWorkModal = ({ visible, onClose, onSuccess }) => {
       onClose();
 
       // ⬇️ Pokrećemo pravi request
-      await submitWork(formData, token);
+      const response = await submitWork(formData, token);
 
-      message.success("Work submitted successfully!");
+      alert("Successfully submit work!");
       form.resetFields();
     } catch (err) {
-      message.error("Submission failed.");
+      alert(err.error);
     } finally {
       setLoading(false);
     }

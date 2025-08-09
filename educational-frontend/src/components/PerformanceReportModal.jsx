@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { Modal, DatePicker, Select, Button, Typography, Card, message } from "antd";
+import { Modal, DatePicker, Select, Button, Typography, Card, message, Table, Divider } from "antd";
 import { generatePerformanceReport } from "../services/evaluationService";
 import ProgressChart from "./ProgressChart";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
-const { Paragraph } = Typography;
+const { Paragraph, Title } = Typography;
 
 const ALL_KEY = "__ALL__";
 
@@ -89,8 +89,21 @@ const PerformanceReportModal = ({ open, onClose, token, submissions, allowStuden
   // izračun trenutne vrijednosti Select-a (da prikaže ALL kad je studentId null)
   const currentSelectValue = studentId ?? ALL_KEY;
 
+  // priprema tabela podataka
+  const gradeDistData = Object.entries(report?.gradeDistribution || {}).map(([grade, count]) => ({
+    key: String(grade),
+    grade,
+    count,
+  }));
+
+  const issuesData = Object.entries(report?.mostCommonIssues || {}).map(([issue, count], idx) => ({
+    key: String(idx),
+    issue,
+    count,
+  }));
+
   return (
-    <Modal open={open} onCancel={onClose} footer={null} title="Performance Report" width={800}>
+    <Modal open={open} onCancel={onClose} footer={null} title="Performance Report" width={900}>
       <div style={{ display: "grid", gridTemplateColumns: allowStudentFilter ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 12 }}>
         <RangePicker onChange={setRange} style={{ width: "100%" }} />
         {allowStudentFilter && (
@@ -120,18 +133,48 @@ const PerformanceReportModal = ({ open, onClose, token, submissions, allowStuden
       </div>
 
       {report && (
-        <div style={{ marginTop: 16 }}>
-          <Paragraph>
-            <b>Total Works:</b> {report.totalWorks} &nbsp;|&nbsp;
-            <b>Average Grade:</b> {report.averageGrade}
-          </Paragraph>
-          <Paragraph>
-            <b>≥9:</b> {report.above9} &nbsp;|&nbsp;
-            <b>7–8:</b> {report.between7And8} &nbsp;|&nbsp;
-            <b>&lt;7:</b> {report.below7}
-          </Paragraph>
+        <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+          {/* Osnovne metrike */}
+          <Card type="inner" title="📊 Summary">
+            <Paragraph style={{ marginBottom: 8 }}>
+              <b>Total Works:</b> {report.totalWorks} &nbsp;|&nbsp;
+              <b>Average Grade:</b> {report.averageGrade}
+            </Paragraph>
+            <Paragraph style={{ marginBottom: 0 }}>
+              <b>≥9:</b> {report.above9} &nbsp;|&nbsp;
+              <b>7–8:</b> {report.between7And8} &nbsp;|&nbsp;
+              <b>&lt;7:</b> {report.below7}
+            </Paragraph>
+          </Card>
 
-          <Card type="inner" title="📈 Grade Evolution" style={{ marginTop: 8 }}>
+          {/* Distribucija ocjena */}
+          <Card type="inner" title="📦 Grade Distribution">
+            <Table
+              size="small"
+              pagination={false}
+              dataSource={gradeDistData}
+              columns={[
+                { title: "Grade", dataIndex: "grade", key: "grade" },
+                { title: "Count", dataIndex: "count", key: "count" },
+              ]}
+            />
+          </Card>
+
+          {/* Najčešći problemi */}
+          <Card type="inner" title="🧩 Most Common Issues">
+            <Table
+              size="small"
+              pagination={false}
+              dataSource={issuesData}
+              columns={[
+                { title: "Issue", dataIndex: "issue", key: "issue" },
+                { title: "Count", dataIndex: "count", key: "count" },
+              ]}
+            />
+          </Card>
+
+          {/* Timeline graf */}
+          <Card type="inner" title="📈 Grade Evolution">
             <ProgressChart data={report} />
           </Card>
         </div>

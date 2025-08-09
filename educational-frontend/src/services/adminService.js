@@ -33,18 +33,22 @@ export const deleteUser = async (id, token) => {
   return res.data;
 };
 
-// Testirano
-export const getMaxSubmissions = async (token) => {
-  const res = await axios.get(`${API_URL}/admin/settings/max-submissions`, {
+// Sliding-window setting
+export async function getSubmissionWindowSetting(token) {
+  const res = await fetch(`${API_URL}/admin/settings/submission-window`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  return res.data;
-};
+  if (!res.ok) throw new Error("Failed to fetch window setting");
+  return res.json(); // { maxPerWindow, windowSizeDays }
+}
 
-// Testirano
-export const setMaxSubmissions = async (value, token) => {
-  const res = await axios.post(`${API_URL}/admin/settings/max-submissions`, { maxPerStudent: value }, {
-    headers: { Authorization: `Bearer ${token}` },
+export async function setSubmissionWindowSetting(payload, token) {
+  const res = await fetch(`${API_URL}/admin/settings/submission-window`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
   });
-  return res.data;
-};
+  if (!res.ok) throw new Error("Failed to save window setting");
+  return res.text();
+}
+

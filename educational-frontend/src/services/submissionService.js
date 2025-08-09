@@ -14,16 +14,23 @@ export const fetchMySubmissions = async (token) => {
 
 // Slanje rada studenta
 export const submitWork = async (formData, token) => {
-  const response = await axios.post(`${API_URL}/submission/submit`, formData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
-  return response.data;
+  try {
+    const response = await axios.post(`${API_URL}/submission/submit`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (err) {
+    // Ovde vraćamo backend poruku kad je error
+    if (err.response && err.response.data) {
+      throw err.response.data; // npr. { error: "Submission limit reached..." }
+    } else {
+      throw { error: "Unknown error occurred" };
+    }
+  }
 };
-
 
 // Dobavljanje evaluacije za odredjeni rad
 export const getFeedbackByWorkId = async (workId) => {

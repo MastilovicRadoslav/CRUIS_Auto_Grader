@@ -1,6 +1,14 @@
+// src/pages/AdminDashboard.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getAllUsers, createUser, updateUser, deleteUser, getMaxSubmissions, setMaxSubmissions, } from "../services/adminService";
+import {
+    getAllUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    getSubmissionWindowSetting,
+    setSubmissionWindowSetting,
+} from "../services/adminService";
 import {
     Table, Button, Modal, Input, Select, Form, message, Typography, Card,
 } from "antd";
@@ -15,9 +23,11 @@ const AdminDashboard = () => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [editUserId, setEditUserId] = useState(null);
-    const [maxSubmissions, setMaxSubmissionsValue] = useState(0);
-    const [maxLoading, setMaxLoading] = useState(false);
-    const [newMax, setNewMax] = useState("");
+
+    // Sliding-window setting
+    const [windowSetting, setWindowSetting] = useState({ maxPerWindow: 0, windowSizeDays: 0 });
+    const [wsLoading, setWsLoading] = useState(false);
+    const [wsForm, setWsForm] = useState({ maxPerWindow: "", windowSizeDays: "" });
 
     const [form] = Form.useForm();
 
@@ -33,19 +43,24 @@ const AdminDashboard = () => {
         }
     };
 
-    useEffect(() => {
-        loadUsers();
-        loadMaxSubmissions();
-    }, [token]);
-
-    const loadMaxSubmissions = async () => {
+    const loadWindowSetting = async () => {
         try {
-            const res = await getMaxSubmissions(token);
-            setMaxSubmissionsValue(res.maxPerStudent);
+            const s = await getSubmissionWindowSetting(token);
+            setWindowSetting(s);
+            setWsForm({
+                maxPerWindow: String(s?.maxPerWindow ?? 0),
+                windowSizeDays: String(s?.windowSizeDays ?? 0),
+            });
         } catch {
-            message.error("Failed to load max submissions setting.");
+            message.error("Failed to load submission window setting.");
         }
     };
+
+    useEffect(() => {
+        loadUsers();
+        loadWindowSetting();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token]);
 
     const handleCreateOrUpdate = async (values) => {
         try {
@@ -88,7 +103,10 @@ const AdminDashboard = () => {
         <div style={{ padding: 20 }}>
             <Title level={2}>Admin Dashboard</Title>
 
-            <Button type="primary" onClick={() => { setModalVisible(true); setEditUserId(null); form.resetFields(); }}>
+            <Button
+                type="primary"
+                onClick={() => { setModalVisible(true); setEditUserId(null); form.resetFields(); }}
+            >
                 Create New User
             </Button>
 
@@ -96,6 +114,7 @@ const AdminDashboard = () => {
                 dataSource={users}
                 loading={loading}
                 rowKey="id"
+                style={{ marginTop: 16 }}
                 columns={[
                     { title: "Username", dataIndex: "username" },
                     { title: "Role", dataIndex: "role" },
@@ -148,42 +167,74 @@ const AdminDashboard = () => {
                     </Form.Item>
                 </Form>
             </Modal>
-            <Card style={{ marginTop: 32 }}>
-                <Title level={4}>Submission Settings</Title>
-                <p>
-                    Current max submissions per student: <strong>{maxSubmissions}</strong>
-                </p>
-                <Input
-                    type="number"
-                    value={newMax}
-                    onChange={(e) => setNewMax(e.target.value)}
-                    placeholder="Enter new max"
-                    style={{ width: 200, marginRight: 10 }}
-                />
-                <Button
-                    type="primary"
-                    onClick={async () => {
-                        if (!newMax || isNaN(newMax)) {
-                            return message.warning("Please enter a valid number.");
-                        }
-                        try {
-                            setMaxLoading(true);
-                            await setMaxSubmissions(parseInt(newMax), token);
-                            message.success("Max submissions updated.");
-                            setMaxSubmissionsValue(parseInt(newMax));
-                            setNewMax("");
-                        } catch {
-                            message.error("Failed to update setting.");
-                        } finally {
-                            setMaxLoading(false);
-                        }
-                    }}
-                    loading={maxLoading}
-                >
-                    Save Setting
-                </Button>
-            </Card>
 
+            {/* Jedina aktivna postavka: sliding-window */}
+            <Card style={{ marginTop: 32 }}>
+                <Title level={4}>Submission Rate Limit (sliding window)</Title>
+                <p>
+                    Current: <strong>{windowSetting.maxPerWindow}</strong> in the last{" "}
+                    <strong>{windowSetting.windowSizeDays}</strong> days
+                </p>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <Input
+                        type="number"
+                        placeholder="Max per window"
+                        style={{ width: 200 }}
+                        value={wsForm.maxPerWindow}
+                        onChange={(e) => setWsForm((p) => ({ ...p, maxPerWindow: e.target.value }))}
+                    />
+                    <Input
+                        type="number"
+                        placeholder="Window size (days)"
+                        style={{ width: 200 }}
+                        value={wsForm.windowSizeDays}
+                        onChange={(e) => setWsForm((p) => ({ ...p, windowSizeDays: e.target.value }))}
+                    />
+                    <Button
+                        type="primary"
+                        loading={wsLoading}
+                        onClick={async () => {
+                            const max = parseInt(wsForm.maxPerWindow, 10);
+                            const days = parseInt(wsForm.windowSizeDays, 10);
+                            if (isNaN(max) || isNaN(days) || max < 0 || days < 0) {
+                                return message.warning("Enter non-negative numbers.");
+                            }
+                            try {
+                                setWsLoading(true);
+                                await setSubmissionWindowSetting({ maxPerWindow: max, windowSizeDays: days }, token);
+                                message.success("Submission window setting updated.");
+                                setWindowSetting({ maxPerWindow: max, windowSizeDays: days });
+                            } catch {
+                                message.error("Failed to update submission window setting.");
+                            } finally {
+                                setWsLoading(false);
+                            }
+                        }}
+                    >
+                        Save Window Setting
+                    </Button>
+
+                    <Button
+                        danger
+                        onClick={async () => {
+                            try {
+                                setWsLoading(true);
+                                await setSubmissionWindowSetting({ maxPerWindow: 0, windowSizeDays: 0 }, token);
+                                setWindowSetting({ maxPerWindow: 0, windowSizeDays: 0 });
+                                setWsForm({ maxPerWindow: "0", windowSizeDays: "0" });
+                                message.success("Submission limit reset to unlimited.");
+                            } catch {
+                                message.error("Failed to reset submission limit.");
+                            } finally {
+                                setWsLoading(false);
+                            }
+                        }}
+                    >
+                        Reset to Unlimited
+                    </Button>
+
+                </div>
+            </Card>
         </div>
     );
 };
