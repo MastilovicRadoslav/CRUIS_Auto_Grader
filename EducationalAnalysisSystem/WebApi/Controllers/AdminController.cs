@@ -34,7 +34,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Admin")]
         [HttpPost("create-user")]
-        public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request) // Testirano radi
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -52,7 +52,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Admin")]
         [HttpDelete("user/{id}")]
-        public async Task<IActionResult> DeleteUser(Guid id)
+        public async Task<IActionResult> DeleteUser(Guid id) // Testirano radi
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -70,7 +70,7 @@ namespace WebApi.Controllers
         [Authorize]
         [AuthorizeRole("Admin")]
         [HttpPut("user/{id}")]
-        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request) // Testirano radi
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
@@ -85,34 +85,29 @@ namespace WebApi.Controllers
             return Ok(new { message = "User updated successfully." });
         }
 
-
-        [Authorize]
-        [AuthorizeRole("Admin")]
-        [HttpPost("settings/max-submissions")]
-        public async Task<IActionResult> SetMaxSubmissions([FromBody] MaxSubmissionsSetting request) // Testirano
+        [HttpPost("settings/submission-window")]
+        public async Task<IActionResult> SetSubmissionWindow([FromBody] SubmissionWindowSetting request)
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
                 new ServicePartitionKey(0)
             );
 
-            var result = await userService.SetMaxSubmissionsAsync(request.MaxPerStudent);
-            return result.Success ? Ok("Setting updated.") : StatusCode(500, "Failed to update setting.");
+            var success = await userService.SetSubmissionWindowAsync(request);
+
+            return success ? Ok("Submission window setting updated.") : StatusCode(500, "Failed to update setting.");
         }
 
-        [Authorize]
-        [AuthorizeRole("Admin")]
-        [HttpGet("settings/max-submissions")]
-        public async Task<IActionResult> GetMaxSubmissions() //Testirano
+        [HttpGet("settings/submission-window")]
+        public async Task<ActionResult<SubmissionWindowSetting>> GetSubmissionWindow()
         {
             var userService = ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/EducationalAnalysisSystem/UserService"),
                 new ServicePartitionKey(0)
             );
 
-            var value = await userService.GetMaxSubmissionsAsync();
-            return Ok(new { maxPerStudent = value });
+            var setting = await userService.GetSubmissionWindowAsync();
+            return Ok(setting);
         }
-
     }
 }

@@ -46,10 +46,13 @@ namespace WebApi.Controllers
 
             var result = await submissionService.SubmitWorkAsync(submitData);
 
+            if (!result.Success)
+            {
+                return StatusCode(429, new { error = result.Error });
+            }
             return Ok(new
             {
-                WorkId = result.Data,
-                Content = content
+                result
             });
         }
 

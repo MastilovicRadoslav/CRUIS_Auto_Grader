@@ -1,6 +1,5 @@
 ﻿using Common.Configurations;
 using Common.DTOs;
-using Common.Enums;
 using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
@@ -170,7 +169,7 @@ namespace UserService
             }
         }
 
-        public async Task<List<User>> GetAllUsersAsync()
+        public async Task<List<User>> GetAllUsersAsync() // Testirani radi
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
             var result = new List<User>();
@@ -183,18 +182,14 @@ namespace UserService
                 while (await enumerator.MoveNextAsync(CancellationToken.None))
                 {
                     var user = enumerator.Current.Value;
-
-                    if (user.Role != Role.Admin) // Izuzmi admine
-                    {
-                        result.Add(user);
-                    }
+                    result.Add(user);
                 }
             }
 
             return result;
         }
 
-        public async Task<OperationResult<Guid>> CreateUserAsync(CreateUserRequest request)
+        public async Task<OperationResult<Guid>> CreateUserAsync(CreateUserRequest request) // Testirano radi
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
@@ -225,7 +220,7 @@ namespace UserService
                 return OperationResult<Guid>.Ok(newUser.Id);
             }
         }
-        public async Task<OperationResult<bool>> DeleteUserAsync(Guid userId)
+        public async Task<OperationResult<bool>> DeleteUserAsync(Guid userId) // Testirano radi
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
@@ -243,7 +238,7 @@ namespace UserService
             }
         }
 
-        public async Task<OperationResult<bool>> UpdateUserAsync(Guid userId, UpdateUserRequest request)
+        public async Task<OperationResult<bool>> UpdateUserAsync(Guid userId, UpdateUserRequest request) // Testirano radi
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
@@ -274,30 +269,7 @@ namespace UserService
             }
         }
 
-        public async Task<OperationResult<bool>> SetMaxSubmissionsAsync(int max)
-        {
-            var settingsDict = await StateManager.GetOrAddAsync<IReliableDictionary<string, int>>("systemSettings");
-
-            using (var tx = StateManager.CreateTransaction())
-            {
-                await settingsDict.SetAsync(tx, "MaxSubmissionsPerStudent", max);
-                await tx.CommitAsync();
-                return OperationResult<bool>.Ok(true);
-            }
-        }
-
-        public async Task<int?> GetMaxSubmissionsAsync()
-        {
-            var settingsDict = await StateManager.GetOrAddAsync<IReliableDictionary<string, int>>("systemSettings");
-
-            using (var tx = StateManager.CreateTransaction())
-            {
-                var result = await settingsDict.TryGetValueAsync(tx, "MaxSubmissionsPerStudent");
-                return result.HasValue ? result.Value : null;
-            }
-        }
-
-        public async Task<string?> GetStudentNameByIdAsync(Guid studentId) // Dobavljanje ime studenta na osnovu njegovog imena za potrebe cuvanja imena studenta u bazu za rad
+        public async Task<string?> GetStudentNameByIdAsync(Guid studentId) // Testirani -  Dobavljanje ime studenta na osnovu njegovog imena za potrebe cuvanja imena studenta u bazu za rad
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
@@ -313,5 +285,41 @@ namespace UserService
                 return null;
             }
         }
+
+        private const string SettingsDictionaryName = "submissionWindowSettings";
+
+        public async Task<bool> SetSubmissionWindowAsync(SubmissionWindowSetting setting)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<string, SubmissionWindowSetting>>(SettingsDictionaryName);
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                await dict.SetAsync(tx, "global", setting);
+                await tx.CommitAsync();
+            }
+
+            return true;
+        }
+
+        public async Task<SubmissionWindowSetting> GetSubmissionWindowAsync()
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<string, SubmissionWindowSetting>>(SettingsDictionaryName);
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var result = await dict.TryGetValueAsync(tx, "global");
+
+                if (result.HasValue)
+                    return result.Value;
+
+                // ako nema postavke, vrati default vrijednost
+                return new SubmissionWindowSetting
+                {
+                    MaxPerWindow = 0,
+                    WindowSizeDays = 0
+                };
+            }
+        }
+
     }
 }

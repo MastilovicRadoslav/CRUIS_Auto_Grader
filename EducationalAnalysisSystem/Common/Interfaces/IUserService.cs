@@ -27,13 +27,13 @@ namespace Common.Interfaces
         Task<OperationResult<bool>> UpdateUserAsync(Guid userId, UpdateUserRequest request); //Azuriranje studenta
 
         [OperationContract]
-        Task<OperationResult<bool>> SetMaxSubmissionsAsync(int max);
-
-        [OperationContract]
-        Task<int?> GetMaxSubmissionsAsync();
-
-        [OperationContract]
         Task<string?> GetStudentNameByIdAsync(Guid studentId);
+
+        // Postavljanje globalnog limita — vraća true ako je uspješno
+        Task<bool> SetSubmissionWindowAsync(SubmissionWindowSetting setting);
+
+        // Dohvat trenutnog limita
+        Task<SubmissionWindowSetting> GetSubmissionWindowAsync();
 
     }
 }

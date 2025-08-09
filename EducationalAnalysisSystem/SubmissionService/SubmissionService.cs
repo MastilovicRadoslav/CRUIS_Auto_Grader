@@ -32,9 +32,37 @@ namespace SubmissionService
 
             _mongoRepo = new SubmissionMongoRepository(submissionSettings);
         }
-
         public async Task<OperationResult<Guid>> SubmitWorkAsync(SubmitWorkData request) // Radi
         {
+
+            // 1) Dohvati globalni sliding-window setting
+            var userSvc = ServiceProxy.Create<IUserService>(
+                new Uri("fabric:/EducationalAnalysisSystem/UserService"),
+                new ServicePartitionKey(0)
+            );
+
+            SubmissionWindowSetting window;
+            try
+            {
+                window = await userSvc.GetSubmissionWindowAsync();
+            }
+            catch
+            {
+                window = new SubmissionWindowSetting { MaxPerWindow = 0, WindowSizeDays = 0 };
+            }
+
+            // 2) Ako je aktivan -> provjeri limit
+            if (window.MaxPerWindow > 0 && window.WindowSizeDays > 0)
+            {
+                var since = DateTime.UtcNow.AddDays(-window.WindowSizeDays);
+                var recent = await _mongoRepo.CountByStudentSinceAsync(request.StudentId, since);
+                if (recent >= window.MaxPerWindow)
+                    return OperationResult<Guid>.Fail(
+                         $"Submission limit reached: {window.MaxPerWindow} in last {window.WindowSizeDays} days."
+                     );
+            }
+
+            //Standardno metoda
             var submissions = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
 
             //Dobavljanje imena studenta na osnovu Id

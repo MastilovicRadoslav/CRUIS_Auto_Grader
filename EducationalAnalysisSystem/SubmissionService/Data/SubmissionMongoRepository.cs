@@ -54,4 +54,13 @@ public class SubmissionMongoRepository : ISubmissionRepository
 
         return result;
     }
+
+    public Task<int> CountByStudentSinceAsync(Guid studentId, DateTime sinceUtc)
+    {
+        var filter = Builders<SubmittedWork>.Filter.And(
+            Builders<SubmittedWork>.Filter.Eq(x => x.StudentId, studentId),
+            Builders<SubmittedWork>.Filter.Gte(x => x.SubmittedAt, sinceUtc)
+        );
+        return _collection.CountDocumentsAsync(filter).ContinueWith(t => (int)t.Result);
+    }
 }

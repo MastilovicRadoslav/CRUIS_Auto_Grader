@@ -23,7 +23,5 @@ namespace Common.Interfaces
 
         [OperationContract]
         Task<SubmittedWork?> GetWorkByIdAsync(Guid workId); // Dobavljanje rada
-
     }
-
 }
