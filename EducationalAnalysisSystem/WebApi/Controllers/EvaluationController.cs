@@ -114,7 +114,7 @@ public class EvaluationController : ControllerBase
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpGet("statistics")]
-    public async Task<IActionResult> GetStatistics() // Izvlacenje statistike svih feedback-ova za sve studente
+    public async Task<IActionResult> GetStatistics() // Testirano - Dobavljanje statistike za Feedback za sve studente 
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -127,7 +127,7 @@ public class EvaluationController : ControllerBase
 
     [Authorize]
     [HttpGet("statistics/student/{studentId}")]
-    public async Task<IActionResult> GetStatisticsByStudentId(Guid studentId) // Dobavljanje statistike za Feedback za jednog studenta na osnovu njegovog ID
+    public async Task<IActionResult> GetStatisticsByStudentId(Guid studentId) // Testirano - Dobavljanje statistike za Feedback za jednog studenta na osnovu njegovog ID
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -146,26 +146,10 @@ public class EvaluationController : ControllerBase
         return Ok();
     }
 
-
-
-    [Authorize]
-    [AuthorizeRole("Professor")]
-    [HttpPost("statistics/date-range")]
-    public async Task<IActionResult> GetStatisticsByDateRange([FromBody] DateRangeRequest request) // Dobavljanje statistike za sve feedback na osnovu date-range
-    {
-        var evaluationService = ServiceProxy.Create<IEvaluationService>(
-            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
-            new ServicePartitionKey(0)
-        );
-
-        var stats = await evaluationService.GetStatisticsByDateRangeAsync(request);
-        return Ok(stats);
-    }
-
     [Authorize]
     [AuthorizeRole("Professor")]
     [HttpPost("reanalyze")]
-    public async Task<IActionResult> ReAnalyzeWithInstructions([FromBody] ReAnalyzeRequest request)
+    public async Task<IActionResult> ReAnalyzeWithInstructions([FromBody] ReAnalyzeRequest request) // Tesstirano - Ponovna analiza moguća od strane Profesora
     {
         var evaluationService = ServiceProxy.Create<IEvaluationService>(
             new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
@@ -177,5 +161,18 @@ public class EvaluationController : ControllerBase
             return NotFound("Work not found.");
 
         return Ok(feedback);
+    }
+
+    [Authorize]
+    [AuthorizeRole("Professor")]
+    [HttpPost("reports/performance")]
+    public async Task<IActionResult> GetPerformanceReport([FromBody] ReportFilterRequest request) // Testirano, funkcija koja na osnovu Data-Range dava statistiku ili za sve studente ili za jednog studenta
+    {
+        var svc = ServiceProxy.Create<IEvaluationService>(
+            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+            new ServicePartitionKey(0)
+        );
+        var stats = await svc.GetStatisticsByFiltersAsync(request);
+        return Ok(stats);
     }
 }

@@ -225,7 +225,7 @@ namespace EvaluationService
             }
         }
 
-        public async Task<List<FeedbackDto>> GetAllFeedbacksAsync() 
+        public async Task<List<FeedbackDto>> GetAllFeedbacksAsync()
         {
             var feedbacks = new List<FeedbackDto>();
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
@@ -244,13 +244,11 @@ namespace EvaluationService
             return feedbacks;
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsAsync() // Izvlacenje statistike svih feedback-ova za sve studente
+        public async Task<EvaluationStatisticsDto> GetStatisticsAsync() // Testirano - Dobavljanje statistike za sve studente iz ProgressService
         {
+            // 1) Pokupi sve feedback-ove iz ReliableDictionary-a
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
-            var result = new EvaluationStatisticsDto();
-
-            var allGrades = new List<int>();
-            var issueCounter = new Dictionary<string, int>();
+            var allFeedbacks = new List<FeedbackDto>();
 
             using (var tx = StateManager.CreateTransaction())
             {
@@ -259,32 +257,23 @@ namespace EvaluationService
 
                 while (await enumerator.MoveNextAsync(CancellationToken.None))
                 {
-                    var feedback = enumerator.Current.Value;
-                    var grade = feedback.Grade;
-                    allGrades.Add(grade);
-
-                    if (grade >= 90) result.Above9++;
-                    else if (grade >= 70) result.Between7And8++;
-                    else result.Below7++;
-
-                    foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
-                    {
-                        if (issueCounter.ContainsKey(issue))
-                            issueCounter[issue]++;
-                        else
-                            issueCounter[issue] = 1;
-                    }
+                    allFeedbacks.Add(enumerator.Current.Value);
                 }
             }
 
-            result.TotalWorks = allGrades.Count;
-            result.AverageGrade = allGrades.Any() ? allGrades.Average() : 0;
-            result.MostCommonIssues = issueCounter;
+            // 2) Delegiraj računanje na ProgressService
+            var progressService = ServiceProxy.Create<IProgressService>(
+                new Uri("fabric:/EducationalAnalysisSystem/ProgressService")
+            );
 
-            return result;
+            var stats = await progressService.AnalyzeProgressAsync(allFeedbacks);
+
+            // 3) Vrati rezultat
+            return stats ?? new EvaluationStatisticsDto();
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId) // Dobavljanje statistike za jednog studenta iz ProgressService
+
+        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId) // Testirano - Dobavljanje statistike za jednog studenta iz ProgressService
         {
             var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
             var result = new EvaluationStatisticsDto();
@@ -315,50 +304,7 @@ namespace EvaluationService
             return result;
         }
 
-
-        public async Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request) //// Dobavljanje statistike za sve feedback na osnovu date-range
-        {
-            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
-            var result = new EvaluationStatisticsDto();
-            var grades = new List<int>();
-            var issues = new Dictionary<string, int>();
-
-            using (var tx = StateManager.CreateTransaction())
-            {
-                var enumerable = await dict.CreateEnumerableAsync(tx);
-                var enumerator = enumerable.GetAsyncEnumerator();
-
-                while (await enumerator.MoveNextAsync(CancellationToken.None))
-                {
-                    var feedback = enumerator.Current.Value;
-
-                    // Ako si već dodao EvaluatedAt u FeedbackDto, onda:
-                    if (feedback.EvaluatedAt >= request.From && feedback.EvaluatedAt <= request.To)
-                    {
-                        var grade = feedback.Grade;
-                        grades.Add(grade);
-
-                        if (grade >= 90) result.Above9++;
-                        else if (grade >= 70) result.Between7And8++;
-                        else result.Below7++;
-
-                        foreach (var issue in feedback.IdentifiedErrors ?? new List<string>())
-                        {
-                            if (issues.ContainsKey(issue)) issues[issue]++;
-                            else issues[issue] = 1;
-                        }
-                    }
-                }
-            }
-
-            result.TotalWorks = grades.Count;
-            result.AverageGrade = grades.Any() ? grades.Average() : 0;
-            result.MostCommonIssues = issues;
-
-            return result;
-        }
-
-        public async Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request)
+        public async Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request) //Testirano - reanaliya feedback
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
@@ -440,6 +386,25 @@ namespace EvaluationService
 
             return feedback;
         }
+
+        public async Task<EvaluationStatisticsDto> GetStatisticsByFiltersAsync(ReportFilterRequest request) //Testirano, funkcija koja na osnovu Data-Range dava statistiku ili za sve studente ili za jednog studenta
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+            var all = new List<FeedbackDto>();
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var en = await dict.CreateEnumerableAsync(tx);
+                var it = en.GetAsyncEnumerator();
+                while (await it.MoveNextAsync(CancellationToken.None))
+                    all.Add(it.Current.Value);
+            }
+
+            var progressService = ServiceProxy.Create<IProgressService>(
+                new Uri("fabric:/EducationalAnalysisSystem/ProgressService")
+            );
+            return await progressService.AnalyzeByFiltersAsync(all, request);
+        }
+
 
     }
 }

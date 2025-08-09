@@ -25,3 +25,13 @@ export const reanalyzeSubmission = async (data, token) => {
   );
   return response.data;
 };
+
+
+export const generatePerformanceReport = async (body, token) => {
+  const res = await axios.post(
+    "http://localhost:8285/api/evaluation/reports/performance",
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res.data;
+};

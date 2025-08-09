@@ -22,6 +22,40 @@ namespace ProgressService
             : base(context)
         { }
 
+        public async Task<EvaluationStatisticsDto> AnalyzeByFiltersAsync(List<FeedbackDto> works, ReportFilterRequest filter)
+        {
+            var filtered = works
+                .Where(w => w.EvaluatedAt >= filter.From && w.EvaluatedAt <= filter.To)
+                .Where(w => !filter.StudentId.HasValue || w.StudentId == filter.StudentId.Value)
+                .Where(w => w.Grade > 0)
+                .OrderBy(w => w.EvaluatedAt)
+                .ToList();
+
+            var total = filtered.Count;
+            var avg = total > 0 ? Math.Round(filtered.Average(w => w.Grade), 2) : 0;
+
+            var gradeDist = filtered.GroupBy(w => w.Grade).ToDictionary(g => g.Key, g => g.Count());
+            var timeline = filtered.Select(w => Tuple.Create(w.EvaluatedAt, w.Grade)).ToList();
+
+            var issues = new Dictionary<string, int>();
+            foreach (var f in filtered)
+                foreach (var issue in f.IdentifiedErrors ?? new List<string>())
+                    issues[issue] = (issues.ContainsKey(issue) ? issues[issue] : 0) + 1;
+
+            return new EvaluationStatisticsDto
+            {
+                TotalWorks = total,
+                AverageGrade = avg,
+                GradeDistribution = gradeDist,
+                GradeTimeline = timeline,
+                MostCommonIssues = issues,
+                Above9 = filtered.Count(x => x.Grade >= 9),
+                Between7And8 = filtered.Count(x => x.Grade >= 7 && x.Grade < 9),
+                Below7 = filtered.Count(x => x.Grade < 7)
+            };
+        }
+
+
         public async Task<EvaluationStatisticsDto> AnalyzeProgressAsync(List<FeedbackDto> works)
         {
             var completedWorks = works

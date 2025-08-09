@@ -15,6 +15,10 @@ namespace Common.Interfaces
     {
         [OperationContract]
         Task<EvaluationStatisticsDto> AnalyzeProgressAsync(List<FeedbackDto> works);
+
+        [OperationContract]
+        Task<EvaluationStatisticsDto> AnalyzeByFiltersAsync(List<FeedbackDto> works, ReportFilterRequest filter);
+
     }
 
 }

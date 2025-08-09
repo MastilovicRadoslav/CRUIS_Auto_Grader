@@ -1,24 +1,43 @@
-// components/ProgressChart.jsx
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React from "react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from "recharts";
 
 const ProgressChart = ({ data }) => {
-  if (!data || !data.gradeTimeline) return null;
+  // data.gradeTimeline može biti: [{date, grade}] ili [{item1, item2}]
+  const points = (data?.gradeTimeline || [])
+    .map(p => {
+      const dateStr = p.date ?? p.item1;
+      const gradeNum = Number(p.grade ?? p.item2);
+      const ts = dateStr ? new Date(dateStr).getTime() : 0;
+      return {
+        ts,
+        dateLabel: dateStr ? new Date(dateStr).toLocaleString() : "",
+        grade: Number.isFinite(gradeNum) ? gradeNum : 0
+      };
+    })
+    .filter(p => p.ts > 0) // odbaci loše datume
+    .sort((a, b) => a.ts - b.ts);
 
-  const formattedData = data.gradeTimeline.map((item, index) => ({
-    date: new Date(item.item1).toLocaleDateString(),
-    grade: item.item2,
-    key: index,
-  }));
+  if (!points.length) {
+    return <div style={{ padding: 12, opacity: 0.7 }}>No data for chart.</div>;
+  }
 
   return (
-    <div style={{ width: '100%', height: 300 }}>
-      <ResponsiveContainer>
-        <LineChart data={formattedData}>
+    <div style={{ width: "100%", height: 260 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={points} margin={{ top: 10, right: 20, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis domain={[0, 10]} />
+          <XAxis dataKey="dateLabel" tick={{ fontSize: 12 }} minTickGap={20} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
           <Tooltip />
-          <Line type="monotone" dataKey="grade" stroke="#8884d8" />
+          <Line type="monotone" dataKey="grade" dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

@@ -12,12 +12,11 @@ import {
   Select,
   Row,
   Col,
-  Modal,
 } from "antd";
 import ProfessorFeedbackModal from "../components/ProfessorFeedbackModal";
-import DateRangeStats from "../components/DateRangeStats";
 import { useSignalR } from "../services/useSignalR";
 import StudentProgressPanel from "../components/StudentProgressPanel";
+import PerformanceReportModal from "../components/PerformanceReportModal";
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -33,31 +32,30 @@ const ProfessorDashboard = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [isStatsModalVisible, setIsStatsModalVisible] = useState(false);
 
-  // ➕ za panel napretka
-  const [selectedStudentId, setSelectedStudentId] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0); // okida refetch u panelu kad stigne SignalR
+  // student progress panel
+  const ALL_KEY = "__ALL__";
+  const [selectedStudentId, setSelectedStudentId] = useState(ALL_KEY); // 👈 odmah ALL
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // performance report modal
+  const [reportOpen, setReportOpen] = useState(false);
 
   const openModal = (workId) => {
     setSelectedWorkId(workId);
     setIsModalVisible(true);
   };
-
   const closeModal = () => {
     setIsModalVisible(false);
     setSelectedWorkId(null);
   };
-
-  const openStatsModal = () => setIsStatsModalVisible(true);
-  const closeStatsModal = () => setIsStatsModalVisible(false);
 
   useEffect(() => {
     const loadSubmissions = async () => {
       try {
         const data = await fetchAllSubmissions(token);
         setSubmissions(data);
-      } catch (err) {
+      } catch {
         message.error("Failed to load submissions.");
       } finally {
         setLoading(false);
@@ -66,13 +64,11 @@ const ProfessorDashboard = () => {
     loadSubmissions();
   }, [token]);
 
-  // iz submissions izvedi jedinstvene studente (za inicijalni izbor u panelu)
+  // jedinstveni studenti (za inicijalni izbor i za report modal)
   const studentOptions = useMemo(() => {
     const map = new Map();
     submissions.forEach((s) => {
-      if (s.studentId && s.studentName) {
-        map.set(s.studentId, s.studentName);
-      }
+      if (s.studentId && s.studentName) map.set(s.studentId, s.studentName);
     });
     return Array.from(map, ([value, label]) => ({ value, label }));
   }, [submissions]);
@@ -84,7 +80,7 @@ const ProfessorDashboard = () => {
   }, [studentOptions, selectedStudentId]);
 
   useSignalR(
-    // 1) status radova (već imaš)
+    // status promjena
     (data) => {
       setSubmissions((prev) => {
         const found = prev.find((s) => s.id === data.workId);
@@ -92,33 +88,31 @@ const ProfessorDashboard = () => {
           return prev.map((s) =>
             s.id === data.workId
               ? {
-                  ...s,
-                  status: data.newStatus,
-                  estimatedAnalysisTime: data.estimatedAnalysisTime,
-                  submittedAt: data.submittedAt,
-                }
+                ...s,
+                status: data.newStatus,
+                estimatedAnalysisTime: data.estimatedAnalysisTime,
+                submittedAt: data.submittedAt,
+              }
               : s
           );
-        } else {
-          return [
-            {
-              id: data.workId,
-              title: data.title,
-              status: data.newStatus,
-              estimatedAnalysisTime: data.estimatedAnalysisTime,
-              submittedAt: data.submittedAt,
-              studentName: data.studentName || "Unknown",
-              studentId: data.studentId, // ako backend šalje; ako ne, ostaje undefined
-            },
-            ...prev,
-          ];
         }
+        return [
+          {
+            id: data.workId,
+            title: data.title,
+            status: data.newStatus,
+            estimatedAnalysisTime: data.estimatedAnalysisTime,
+            submittedAt: data.submittedAt,
+            studentName: data.studentName || "Unknown",
+            studentId: data.studentId,
+          },
+          ...prev,
+        ];
       });
     },
-    // 2) napredak (ProgressUpdated sa StudentId) -> auto refresh samo za trenutno izabranog
+    // auto refresh napretka izabranog studenta
     async (updatedStudentId) => {
-      if (selectedStudentId && updatedStudentId === selectedStudentId) {
-        // okini refetch u panelu
+      if (selectedStudentId === ALL_KEY || updatedStudentId === selectedStudentId) {
         setRefreshKey((k) => k + 1);
       }
     }
@@ -133,14 +127,7 @@ const ProfessorDashboard = () => {
 
   if (loading) {
     return (
-      <div
-        style={{
-          height: "60vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <div style={{ height: "60vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
         <Spin size="large" />
       </div>
     );
@@ -169,39 +156,29 @@ const ProfessorDashboard = () => {
         gap: "1.5rem",
       }}
     >
-      {/* lijevo: lista radova */}
+      {/* lijevo: lista + toolbar */}
       <div>
-        <Title level={2}>All Student Submissions</Title>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Title level={2} style={{ marginBottom: 16 }}>All Student Submissions</Title>
+          <Button onClick={() => setReportOpen(true)}>Performance Report</Button>
+        </div>
 
         <Row gutter={16} style={{ marginBottom: "1.5rem" }} align="middle">
           <Col xs={24} sm={8}>
-            <Search
-              placeholder="Search by student name"
-              allowClear
-              onSearch={(value) => setSearchTerm(value)}
-            />
+            <Search placeholder="Search by student name" allowClear onSearch={(v) => setSearchTerm(v)} />
           </Col>
           <Col xs={24} sm={8}>
             <Select
               placeholder="Filter by status"
               allowClear
               style={{ width: "100%" }}
-              onChange={(value) => setStatusFilter(value)}
+              onChange={(v) => setStatusFilter(v)}
             >
               <Option value="Pending">Pending</Option>
               <Option value="InProgress">InProgress</Option>
               <Option value="Completed">Completed</Option>
               <Option value="Rejected">Rejected</Option>
             </Select>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Button
-              type="primary"
-              onClick={openStatsModal}
-              style={{ float: "right", width: "100%" }}
-            >
-              Get Statistics
-            </Button>
           </Col>
         </Row>
 
@@ -211,26 +188,17 @@ const ProfessorDashboard = () => {
           renderItem={(item) => (
             <List.Item>
               <Card title={`📝 ${item.title}`}>
-                <p>
-                  <strong>Student:</strong> {item.studentName}
-                </p>
-                <p>
-                  <strong>Status:</strong> {formatStatus(item.status)}
-                </p>
-                <p>
-                  <strong>Submitted At:</strong>{" "}
-                  {new Date(item.submittedAt).toLocaleString()}
-                </p>
-                <Button type="primary" onClick={() => openModal(item.id)}>
-                  View Feedback
-                </Button>
+                <p><strong>Student:</strong> {item.studentName}</p>
+                <p><strong>Status:</strong> {formatStatus(item.status)}</p>
+                <p><strong>Submitted At:</strong> {new Date(item.submittedAt).toLocaleString()}</p>
+                <Button type="primary" onClick={() => openModal(item.id)}>View Feedback</Button>
               </Card>
             </List.Item>
           )}
         />
       </div>
 
-      {/* desno: panel napretka izabranog studenta */}
+      {/* desno: napredak izabranog studenta */}
       <div>
         <StudentProgressPanel
           token={token}
@@ -241,23 +209,17 @@ const ProfessorDashboard = () => {
         />
       </div>
 
-      {/* Feedback modal */}
-      <ProfessorFeedbackModal
-        open={isModalVisible}
-        onClose={closeModal}
-        workId={selectedWorkId}
-      />
+      {/* feedback modal */}
+      <ProfessorFeedbackModal open={isModalVisible} onClose={closeModal} workId={selectedWorkId} />
 
-      {/* Modal za globalne statistike (date range) */}
-      <Modal
-        open={isStatsModalVisible}
-        onCancel={closeStatsModal}
-        footer={null}
-        title="Submission Statistics"
-        width={700}
-      >
-        <DateRangeStats token={token} />
-      </Modal>
+      {/* performance report modal */}
+      <PerformanceReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        token={token}
+        submissions={submissions}
+        allowStudentFilter={true} // stavi false ako želiš samo "svi studenti"
+      />
     </div>
   );
 };

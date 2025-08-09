@@ -30,10 +30,11 @@ namespace Common.Interfaces
         Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId); // Filtriranje statistike po studentu
 
         [OperationContract]
-        Task<EvaluationStatisticsDto> GetStatisticsByDateRangeAsync(DateRangeRequest request); //Statistika evaluacija u zadatom vremenskom opsegu
+        Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request);
 
         [OperationContract]
-        Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request);
+        Task<EvaluationStatisticsDto> GetStatisticsByFiltersAsync(ReportFilterRequest request);
+
 
     }
 }
