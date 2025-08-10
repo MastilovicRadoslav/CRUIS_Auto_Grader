@@ -8,6 +8,7 @@ using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
+using System.Text.Json;
 using UserService.Data;
 
 namespace UserService
@@ -319,6 +320,32 @@ namespace UserService
                     WindowSizeDays = 0
                 };
             }
+        }
+
+        private const string SettingsDict = "app-settings";
+        private const string AnalysisSettingsKey = "admin-analysis-settings";
+
+        public async Task<bool> SetAdminAnalysisSettingsAsync(AdminAnalysisSettings settings)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<string, string>>(SettingsDict);
+            using var tx = StateManager.CreateTransaction();
+            var json = JsonSerializer.Serialize(settings);
+            await dict.AddOrUpdateAsync(tx, AnalysisSettingsKey, json, (_, __) => json);
+            await tx.CommitAsync();
+            return true;
+        }
+
+        public async Task<AdminAnalysisSettings> GetAdminAnalysisSettingsAsync()
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<string, string>>(SettingsDict);
+            using var tx = StateManager.CreateTransaction();
+            var res = await dict.TryGetValueAsync(tx, AnalysisSettingsKey);
+            if (res.HasValue)
+            {
+                var parsed = JsonSerializer.Deserialize<AdminAnalysisSettings>(res.Value);
+                if (parsed != null) return parsed;
+            }
+            return new AdminAnalysisSettings(); // default 1–10, bez metoda
         }
 
     }

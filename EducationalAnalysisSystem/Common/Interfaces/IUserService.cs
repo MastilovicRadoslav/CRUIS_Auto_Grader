@@ -30,10 +30,18 @@ namespace Common.Interfaces
         Task<string?> GetStudentNameByIdAsync(Guid studentId);
 
         // Postavljanje globalnog limita — vraća true ako je uspješno
+        [OperationContract]
         Task<bool> SetSubmissionWindowAsync(SubmissionWindowSetting setting);
 
         // Dohvat trenutnog limita
+        [OperationContract]
         Task<SubmissionWindowSetting> GetSubmissionWindowAsync();
+
+        [OperationContract]
+        Task<bool> SetAdminAnalysisSettingsAsync(AdminAnalysisSettings settings);
+
+        [OperationContract]
+        Task<AdminAnalysisSettings> GetAdminAnalysisSettingsAsync();
 
     }
 }

@@ -38,9 +38,24 @@ namespace EvaluationService
         {
             AnalysisResultDto? analysis = null;
 
+            // 1) Povuci admin settings
+            AdminAnalysisSettings settings;
             try
             {
-                analysis = await LlmClient.AnalyzeAsync(work.Content);
+                var userSvc = ServiceProxy.Create<IUserService>(
+                    new Uri("fabric:/EducationalAnalysisSystem/UserService"),
+                    new ServicePartitionKey(0)
+                );
+                settings = await userSvc.GetAdminAnalysisSettingsAsync();
+            }
+            catch
+            {
+                settings = new AdminAnalysisSettings(); // default 1–10, bez metoda
+            }
+
+            try
+            {
+                analysis = await LlmClient.AnalyzeAsync(work.Content, "", settings);
             }
             catch (Exception ex)
             {
@@ -317,9 +332,24 @@ namespace EvaluationService
 
             AnalysisResultDto? analysis = null;
 
+            // 1) Admin settings
+            AdminAnalysisSettings settings;
             try
             {
-                analysis = await LlmClient.AnalyzeAsync(submittedWork.Content, request.Instructions);
+                var userSvc = ServiceProxy.Create<IUserService>(
+                    new Uri("fabric:/EducationalAnalysisSystem/UserService"),
+                    new ServicePartitionKey(0)
+                );
+                settings = await userSvc.GetAdminAnalysisSettingsAsync();
+            }
+            catch
+            {
+                settings = new AdminAnalysisSettings();
+            }
+
+            try
+            {
+                analysis = await LlmClient.AnalyzeAsync(submittedWork.Content, request.Instructions, settings);
             }
             catch
             {

@@ -109,5 +109,36 @@ namespace WebApi.Controllers
             var setting = await userService.GetSubmissionWindowAsync();
             return Ok(setting);
         }
+
+        [Authorize]
+        [AuthorizeRole("Admin")]
+        [HttpPost("settings/analysis")]
+        public async Task<IActionResult> SetAnalysisSettings([FromBody] AdminAnalysisSettings request)
+        {
+            if (request.MinGrade < 0 || request.MaxGrade <= 0 || request.MinGrade >= request.MaxGrade)
+                return BadRequest("Invalid grade range.");
+
+            var userService = ServiceProxy.Create<IUserService>(
+                new Uri("fabric:/EducationalAnalysisSystem/UserService"),
+                new ServicePartitionKey(0)
+            );
+
+            var ok = await userService.SetAdminAnalysisSettingsAsync(request);
+            return ok ? Ok("Analysis settings updated.") : StatusCode(500, "Failed to update settings.");
+        }
+
+        [Authorize]
+        [AuthorizeRole("Admin")]
+        [HttpGet("settings/analysis")]
+        public async Task<IActionResult> GetAnalysisSettings()
+        {
+            var userService = ServiceProxy.Create<IUserService>(
+                new Uri("fabric:/EducationalAnalysisSystem/UserService"),
+                new ServicePartitionKey(0)
+            );
+
+            var settings = await userService.GetAdminAnalysisSettingsAsync();
+            return Ok(settings);
+        }
     }
 }
