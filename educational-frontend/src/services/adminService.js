@@ -52,3 +52,21 @@ export async function setSubmissionWindowSetting(payload, token) {
   return res.text();
 }
 
+// Admin analysis settings
+export async function getAnalysisSettings(token) {
+  const res = await fetch(`${API_URL}/admin/settings/analysis`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch analysis settings");
+  return res.json(); // { minGrade, maxGrade, methods: string[] }
+}
+
+export async function setAnalysisSettings(payload, token) {
+  const res = await fetch(`${API_URL}/admin/settings/analysis`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to save analysis settings");
+  return res.text();
+}
