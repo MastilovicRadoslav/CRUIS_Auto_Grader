@@ -1,0 +1,56 @@
+.fbm-modal .ant-modal-title {
+  font-weight: 700;
+}
+
+/* grid raspored sa blokovima */
+.fbm-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.fbm-block {
+  margin-bottom: 4px;
+}
+
+/* grade + evaluatedAt u 2 kolone na većim ekranima */
+.fbm-inline {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.fbm-grade {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.fbm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fbm-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f6f7fb;
+  border: 1px solid #e6e8f0;
+}
+
+.fbm-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+
+@media (min-width: 576px) {
+  .fbm-inline {
+    grid-template-columns: 1fr 1fr;
+  }
+}

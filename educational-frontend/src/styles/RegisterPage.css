@@ -1,0 +1,22 @@
+.register-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10%;
+  padding: 0 16px;
+}
+
+.register-card {
+  width: 400px;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+.register-footer {
+  margin-top: 1rem;
+  text-align: center;
+  color: #475467;
+}
+
+.register-footer a {
+  color: #1677ff;
+}

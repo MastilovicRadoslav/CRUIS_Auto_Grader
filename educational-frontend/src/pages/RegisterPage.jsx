@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Select, message, Card } from "antd";
-import axios from "axios";
 import { registerUser } from "../services/authService";
+import "../styles/RegisterPage.css";
 
 const { Option } = Select;
 
@@ -13,7 +13,7 @@ const RegisterPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      registerUser(values); //slanje post zahtjeva na backend
+      await registerUser(values); // slanje POST zahtjeva na backend
       message.success("Registration successful! You can now log in.");
       navigate("/");
     } catch (err) {
@@ -24,27 +24,47 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="centered-page">
-      <Card title="Register" style={{ width: 400 }}>
-        <Form layout="vertical" onFinish={onFinish}>
+    <div className="register-container">
+      <Card
+        title="Register"
+        className="register-card"
+        headStyle={{
+          textAlign: "center",
+          fontWeight: 700,
+          fontSize: 18,
+        }}
+        bodyStyle={{
+          paddingTop: 20,
+        }}
+      >
+        <Form layout="vertical" onFinish={onFinish} autoComplete="off">
           <Form.Item name="username" label="Username" rules={[{ required: true }]}>
-            <Input />
+            <Input size="large" placeholder="Enter your username" disabled={loading} allowClear />
           </Form.Item>
+
           <Form.Item name="password" label="Password" rules={[{ required: true }]}>
-            <Input.Password />
+            <Input.Password size="large" placeholder="Enter your password" disabled={loading} />
           </Form.Item>
+
           <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-            <Select placeholder="Select a role">
+            <Select
+              placeholder="Select a role"
+              size="large"
+              disabled={loading}
+              allowClear
+            >
               <Option value="Student">Student</Option>
               <Option value="Professor">Professor</Option>
             </Select>
           </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button type="primary" htmlType="submit" loading={loading} block size="large">
               Register
             </Button>
           </Form.Item>
-          <div style={{ textAlign: "center" }}>
+
+          <div className="register-footer">
             Already have an account? <Link to="/">Login</Link>
           </div>
         </Form>

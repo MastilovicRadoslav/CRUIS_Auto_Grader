@@ -7,6 +7,7 @@ import FeedbackModal from "../components/FeedbackModal";
 import { useSignalR } from "../services/useSignalR";
 import { fetchStudentProgress } from "../services/progressService";
 import ProgressChart from "../components/ProgressChart";
+import "../styles/StudentDashboard.css";
 
 const { Title } = Typography;
 
@@ -41,7 +42,7 @@ const StudentDashboard = () => {
 
     loadSubmissions();
     loadProgress();
-  }, [token]);
+  }, [token]); // ostavljeno kao i kod tebe da ne mijenjamo ponašanje
 
   useSignalR(
     (data) => {
@@ -86,14 +87,7 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div
-        style={{
-          height: "60vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <div className="sd-loading">
         <Spin size="large" />
       </div>
     );
@@ -113,58 +107,82 @@ const StudentDashboard = () => {
     return statusMap[status] || status;
   };
 
+  const getStatusClass = (normalized) => {
+    switch (normalized) {
+      case "Completed":
+        return "sd-status sd-status--success";
+      case "In Progress":
+      case "InProgress":
+        return "sd-status sd-status--processing";
+      case "Rejected":
+        return "sd-status sd-status--danger";
+      case "Pending":
+      default:
+        return "sd-status sd-status--warning";
+    }
+  };
+
   return (
-    <div style={{ display: "flex", gap: "2rem", padding: "2rem" }}>
-      <div style={{ flex: 2 }}>
-        <Title level={2}>My Submissions</Title>
-        <Button
-          type="primary"
-          onClick={() => setIsModalOpen(true)}
-          style={{ marginBottom: "1rem" }}
-        >
-          Submit New Work
-        </Button>
+    <div className="student-dashboard">
+      <div className="sd-left">
+        <div className="sd-header">
+          <Title level={2} className="sd-title">My Submissions</Title>
+          <Button type="primary" onClick={() => setIsModalOpen(true)} className="sd-submit-btn">
+            Submit New Work
+          </Button>
+        </div>
 
         <List
           grid={{ gutter: 16, column: 1 }}
           dataSource={submissions}
-          renderItem={(item) => (
-            <List.Item>
-              <Card title={item.title}>
-                <p><strong>Status:</strong> {formatStatus(item.status)}</p>
-                <p>
-                  <strong>Estimated Analysis Time:</strong>{" "}
-                  {item.estimatedAnalysisTime
-                    ? `${parseInt(item.estimatedAnalysisTime.match(/\d+/g)?.[1] || "0", 10)} minutes`
-                    : "Unknown"}
-                </p>
-                <p>
-                  <strong>Submitted At:</strong>{" "}
-                  {item.submittedAt
-                    ? new Date(item.submittedAt).toLocaleString()
-                    : "Unknown"}
-                </p>
-                <Button onClick={() => setSelectedWorkId(item.id)}>
-                  View Feedback
-                </Button>
-              </Card>
-            </List.Item>
-          )}
+          renderItem={(item) => {
+            const normalizedStatus = formatStatus(item.status);
+            return (
+              <List.Item>
+                <Card title={`📝 ${item.title}`} className="sd-card">
+                  <p className="sd-row">
+                    <strong>Status:</strong>{" "}
+                    <span className={getStatusClass(normalizedStatus)}>
+                      {normalizedStatus}
+                    </span>
+                  </p>
+
+                  <p className="sd-row">
+                    <strong>Estimated Analysis Time:</strong>{" "}
+                    {item.estimatedAnalysisTime
+                      ? `${parseInt(item.estimatedAnalysisTime.match(/\d+/g)?.[1] || "0", 10)} minutes`
+                      : "Unknown"}
+                  </p>
+
+                  <p className="sd-row">
+                    <strong>Submitted At:</strong>{" "}
+                    {item.submittedAt
+                      ? new Date(item.submittedAt).toLocaleString()
+                      : "Unknown"}
+                  </p>
+
+                  <Button type="primary" onClick={() => setSelectedWorkId(item.id)}>
+                    View Feedback
+                  </Button>
+                </Card>
+              </List.Item>
+            );
+          }}
         />
       </div>
 
-      <div style={{ flex: 1 }}>
+      <div className="sd-right">
         {progress && (
-          <Card title="📊 Your Progress Statistics" style={{ marginBottom: "2rem" }}>
-            <p><strong>Total Works:</strong> {progress.totalWorks}</p>
-            <p><strong>Average Grade:</strong> {progress.averageGrade}</p>
-            <p><strong>Above 9:</strong> {progress.above9}</p>
-            <p><strong>Between 7 and 8:</strong> {progress.between7And8}</p>
-            <p><strong>Below 7:</strong> {progress.below7}</p>
+          <Card title="📊 Your Progress Statistics" className="sd-stats-card">
+            <p className="sd-row"><strong>Total Works:</strong> {progress.totalWorks}</p>
+            <p className="sd-row"><strong>Average Grade:</strong> {progress.averageGrade}</p>
+            <p className="sd-row"><strong>Above 9:</strong> {progress.above9}</p>
+            <p className="sd-row"><strong>Between 7 and 8:</strong> {progress.between7And8}</p>
+            <p className="sd-row"><strong>Below 7:</strong> {progress.below7}</p>
           </Card>
         )}
         {progress && (
-          <Card title="📈 Grade Evolution Over Time">
+          <Card title="📈 Grade Evolution Over Time" className="sd-chart-card">
             <ProgressChart data={progress} />
           </Card>
         )}

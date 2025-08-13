@@ -159,7 +159,7 @@ const ProfessorDashboard = () => {
       {/* lijevo: lista + toolbar */}
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Title level={2} style={{ marginBottom: 16 }}>All Student Submissions</Title>
+          <Title level={2} style={{ marginBottom: 16 }}>Professor Dashboard</Title>
           <Button onClick={() => setReportOpen(true)}>Performance Report</Button>
         </div>
 

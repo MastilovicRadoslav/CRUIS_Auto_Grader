@@ -1,5 +1,6 @@
+/* styles/Navbar.css */
 .navbar-header {
-  background-color: #001529;
+  background-color: #001529; /* AntD default dark header */
   padding: 0 24px;
   display: flex;
   align-items: center;
@@ -21,6 +22,47 @@
   text-decoration: none;
 }
 
+.navbar-logo:hover {
+  color: #69b1ff; /* suptilni hover na tamnoj pozadini */
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+}
+
 .navbar-actions > * {
   margin-left: 1rem;
+}
+
+/* --- Novi blok za prikaz usera --- */
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.navbar-avatar {
+  background: #1677ff; /* AntD primary */
+  color: #fff;
+  font-weight: 600;
+}
+
+.navbar-username {
+  color: #ffffff;
+  max-width: 160px; /* spriječi prelamanje */
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Malo zbijen prikaz na veoma malim ekranima */
+@media (max-width: 480px) {
+  .navbar-username {
+    display: none; /* ostavi samo avatar */
+  }
 }

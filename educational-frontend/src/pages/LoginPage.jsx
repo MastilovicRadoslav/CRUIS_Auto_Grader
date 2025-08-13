@@ -1,59 +1,87 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, message, Card } from "antd";
 import { loginUser } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
-
+import "../styles/LoginPage.css";
 
 const LoginPage = () => {
-    const { login } = useAuth();
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-    const onFinish = async (values) => {
-        setLoading(true);
-        try {
-            const response = await loginUser(values); // slanje POST zahteva na backend
-            console.log("Login response:", response.data); 
-            login(response.data.token, response.data.userId, response.data.role); // Čuvam token, userId i role
-            message.success(response.data.Message);
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      const response = await loginUser(values);
+      const usernameFromApi = response?.data?.username;
+      const username = usernameFromApi || values.username;
 
-            const role = response.data.role.toLowerCase();
+      login(response.data.token, response.data.userId, response.data.role, username);
+      message.success(response.data.Message || "Login successful");
 
-            if (role === "student") navigate("/student");
-            else if (role === "professor") navigate("/professor");
-            else navigate("/admin");
-        } catch (err) {
-            message.error("Login failed: " + (err.response?.data || "Unexpected error"));
-        } finally {
-            setLoading(false);
-        }
-    };
+      const role = response.data.role.toLowerCase();
+      if (role === "student") navigate("/student");
+      else if (role === "professor") navigate("/professor");
+      else navigate("/admin");
+    } catch (err) {
+      message.error("Login failed: " + (err.response?.data || "Unexpected error"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  return (
+    <div className="login-container">
+      <Card
+        title="Login"
+        className="login-card"
+        headStyle={{
+          textAlign: "center",
+          fontWeight: 700,
+          fontSize: 18,
+        }}
+        bodyStyle={{
+          paddingTop: 20,
+        }}
+      >
+        <Form layout="vertical" onFinish={onFinish} autoComplete="off">
+          <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+            <Input
+              size="large"
+              placeholder="Enter your username"
+              disabled={loading}
+              allowClear
+            />
+          </Form.Item>
 
-    return (
-        <div className="login-container" style={{ display: "flex", justifyContent: "center", marginTop: "10%" }}>
-            <Card title="Login" style={{ width: 400 }}>
-                <Form layout="vertical" onFinish={onFinish}>
-                    <Form.Item name="username" label="Username" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="password" label="Password" rules={[{ required: true }]}>
-                        <Input.Password />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" loading={loading} block>
-                            Log in
-                        </Button>
-                    </Form.Item>
-                    <div style={{ marginTop: "1rem", textAlign: "center" }}>
-                        Don't have an account? <Link to="/register">Register here</Link>
-                    </div>
-                </Form>
-            </Card>
-        </div>
-    );
+          <Form.Item name="password" label="Password" rules={[{ required: true }]}>
+            <Input.Password
+              size="large"
+              placeholder="Enter your password"
+              disabled={loading}
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              size="large"
+            >
+              Log in
+            </Button>
+          </Form.Item>
+
+          <div className="login-footer">
+            Don&apos;t have an account? <Link to="/register">Register here</Link>
+          </div>
+        </Form>
+      </Card>
+    </div>
+  );
 };
 
 export default LoginPage;

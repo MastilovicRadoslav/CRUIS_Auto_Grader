@@ -1,0 +1,12 @@
+.swm-modal .ant-modal-title {
+  font-weight: 700;
+}
+
+.swm-filehint {
+  margin-top: -6px;
+  margin-bottom: 16px;
+}
+
+.swm-filename {
+  font-weight: 600;
+}
