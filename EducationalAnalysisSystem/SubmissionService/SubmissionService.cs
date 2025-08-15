@@ -363,6 +363,56 @@ namespace SubmissionService
             }
         }
 
+        public async Task<int> DeleteByStudentIdAsync(Guid studentId)
+        {
+            var submissionsDict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, SubmittedWork>>("submissions");
+            var toDelete = new List<Guid>();
+
+            // 1) Skupi ključeve za brisanje iz ReliableDictionary
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var en = await submissionsDict.CreateEnumerableAsync(tx, EnumerationMode.Unordered);
+                var it = en.GetAsyncEnumerator();
+
+                while (await it.MoveNextAsync(CancellationToken.None))
+                {
+                    var work = it.Current.Value;
+                    if (work.StudentId == studentId)
+                        toDelete.Add(work.Id);
+                }
+            }
+
+            // 2) Obriši iz Mongo (bulk ako imaš metodu, inače pojedinačno)
+            try
+            {
+                // Ako imaš: await _mongoRepo.DeleteManyByStudentIdAsync(studentId);
+                await _mongoRepo.DeleteManyByStudentIdAsync(studentId);
+            }
+            catch
+            {
+                foreach (var id in toDelete)
+                {
+                    try { await _mongoRepo.DeleteByIdAsync(id); } catch { /* ignore */ }
+                }
+            }
+
+            // 3) Obriši iz ReliableDictionary-a
+            var dictDeleted = 0;
+            using (var tx = StateManager.CreateTransaction())
+            {
+                foreach (var id in toDelete)
+                {
+                    var removed = await submissionsDict.TryRemoveAsync(tx, id);
+                    if (removed.HasValue) // removed.Value je SubmittedWork; HasValue govori da je brisanje uspjelo
+                    {
+                        dictDeleted++;
+                    }
+                }
+                await tx.CommitAsync();
+            }
+
+            return dictDeleted;
+        }
 
     }
 }

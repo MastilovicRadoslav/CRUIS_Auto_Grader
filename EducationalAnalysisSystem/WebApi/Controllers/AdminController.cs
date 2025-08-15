@@ -2,9 +2,11 @@
 using Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
 using WebApi.Helpers;
+using WebApi.Hubs;
 
 namespace WebApi.Controllers
 {
@@ -139,6 +141,16 @@ namespace WebApi.Controllers
 
             var settings = await userService.GetAdminAnalysisSettingsAsync();
             return Ok(settings);
+        }
+
+        // pozivaš iz UserService nakon brisanja zbog obavjestenja na graf
+        [HttpPost("notify-student-purged")]
+        public async Task<IActionResult> NotifyStudentPurged([FromBody] Guid studentId)
+        {
+
+            var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<StatusHub>>();
+            await hubContext.Clients.All.SendAsync("StudentPurged", new { studentId });
+            return Ok();
         }
     }
 }

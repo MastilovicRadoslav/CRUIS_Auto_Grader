@@ -35,6 +35,10 @@ namespace Common.Interfaces
         [OperationContract]
         Task<EvaluationStatisticsDto> GetStatisticsByFiltersAsync(ReportFilterRequest request);
 
+        [OperationContract]
+        Task<int> DeleteFeedbacksByStudentIdAsync(Guid studentId);
+
+
 
     }
 }

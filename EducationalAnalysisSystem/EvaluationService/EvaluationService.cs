@@ -148,16 +148,27 @@ namespace EvaluationService
 
             using (var tx = StateManager.CreateTransaction())
             {
+                // 1️⃣ Prvo obriši sve postojeće zapise iz ReliableDictionary
+                var enumerator = (await feedbackDict.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+                while (await enumerator.MoveNextAsync(CancellationToken.None))
+                {
+                    await feedbackDict.TryRemoveAsync(tx, enumerator.Current.Key);
+                }
+
+                // 2️⃣ Zatim učitaj sve iz MongoDB
                 var allFeedbacks = await _feedbackRepo.GetAllAsync();
 
+                // 3️⃣ Ubaci nove zapise u ReliableDictionary
                 foreach (var feedback in allFeedbacks)
                 {
                     await feedbackDict.AddOrUpdateAsync(tx, feedback.WorkId, feedback, (key, oldValue) => feedback);
                 }
 
+                // 4️⃣ Commit
                 await tx.CommitAsync();
             }
         }
+
 
 
 
@@ -259,67 +270,37 @@ namespace EvaluationService
             return feedbacks;
         }
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsAsync() // Testirano - Dobavljanje statistike za sve studente iz ProgressService
+        public async Task<EvaluationStatisticsDto> GetStatisticsAsync()
         {
-            // 1) Pokupi sve feedback-ove iz ReliableDictionary-a
-            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
-            var allFeedbacks = new List<FeedbackDto>();
+            // 1) Dovuci SVE feedbackove iz MongoDB
+            var allFeedbacks = await _feedbackRepo.GetAllAsync();
 
-            using (var tx = StateManager.CreateTransaction())
-            {
-                var enumerable = await dict.CreateEnumerableAsync(tx);
-                var enumerator = enumerable.GetAsyncEnumerator();
-
-                while (await enumerator.MoveNextAsync(CancellationToken.None))
-                {
-                    allFeedbacks.Add(enumerator.Current.Value);
-                }
-            }
-
-            // 2) Delegiraj računanje na ProgressService
+            // 2) Delegiraj obračun na ProgressService
             var progressService = ServiceProxy.Create<IProgressService>(
                 new Uri("fabric:/EducationalAnalysisSystem/ProgressService")
             );
 
             var stats = await progressService.AnalyzeProgressAsync(allFeedbacks);
-
-            // 3) Vrati rezultat
             return stats ?? new EvaluationStatisticsDto();
         }
 
 
-        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId) // Testirano - Dobavljanje statistike za jednog studenta iz ProgressService
+        public async Task<EvaluationStatisticsDto> GetStatisticsByStudentIdAsync(Guid studentId)
         {
-            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
-            var result = new EvaluationStatisticsDto();
+            // 1) Dovuci feedback-ove za konkretnog studenta iz MongoDB
+            var studentFeedbacks = await _feedbackRepo.GetByStudentIdAsync(studentId);
 
-            var feedbackList = new List<FeedbackDto>();
-
-            using (var tx = StateManager.CreateTransaction())
-            {
-                var enumerable = await dict.CreateEnumerableAsync(tx);
-                var enumerator = enumerable.GetAsyncEnumerator();
-
-                while (await enumerator.MoveNextAsync(CancellationToken.None))
-                {
-                    var feedback = enumerator.Current.Value;
-                    if (feedback.StudentId == studentId)
-                    {
-                        feedbackList.Add(feedback);
-                    }
-                }
-            }
-
+            // 2) Delegiraj obračun na ProgressService
             var progressService = ServiceProxy.Create<IProgressService>(
                 new Uri("fabric:/EducationalAnalysisSystem/ProgressService")
             );
 
-            result = await progressService.AnalyzeProgressAsync(feedbackList);
-
-            return result;
+            var stats = await progressService.AnalyzeProgressAsync(studentFeedbacks);
+            return stats ?? new EvaluationStatisticsDto();
         }
 
-        public async Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request) //Testirano - reanaliya feedback
+
+        public async Task<FeedbackDto?> ReAnalyzeWithInstructionsAsync(ReAnalyzeRequest request) //Testirano - reanaliza feedback
         {
             var submissionService = ServiceProxy.Create<ISubmissionService>(
                 new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
@@ -435,6 +416,55 @@ namespace EvaluationService
             return await progressService.AnalyzeByFiltersAsync(all, request);
         }
 
+        public async Task<int> DeleteFeedbacksByStudentIdAsync(Guid studentId)
+        {
+            var dict = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, FeedbackDto>>("feedbacks");
+            var toDelete = new List<Guid>();
+
+            // 1) Skupi ključeve
+            using (var tx = StateManager.CreateTransaction())
+            {
+                var en = await dict.CreateEnumerableAsync(tx, EnumerationMode.Unordered);
+                var it = en.GetAsyncEnumerator();
+
+                while (await it.MoveNextAsync(CancellationToken.None))
+                {
+                    var fb = it.Current.Value;
+                    if (fb.StudentId == studentId)
+                        toDelete.Add(fb.WorkId);
+                }
+            }
+
+            // 2) Obriši iz Mongo (bulk ako imaš metodu, inače fallback pojedinačno)
+            try
+            {
+                await _feedbackRepo.DeleteManyByStudentIdAsync(studentId);
+            }
+            catch
+            {
+                foreach (var wid in toDelete)
+                {
+                    try { await _feedbackRepo.DeleteAsync(wid); } catch { /* ignore */ }
+                }
+            }
+
+            // 3) Obriši iz ReliableDictionary
+            int dictDeleted = 0;
+            using (var tx = StateManager.CreateTransaction())
+            {
+                foreach (var wid in toDelete)
+                {
+                    var removed = await dict.TryRemoveAsync(tx, wid);
+                    if (removed.HasValue)           // ✅ dovoljno, Value je FeedbackDto
+                        dictDeleted++;
+                }
+                await tx.CommitAsync();
+            }
+
+            // (opciono) 4) SignalR notifikacija “progress changed” za tog studenta
+
+            return dictDeleted;
+        }
 
     }
 }

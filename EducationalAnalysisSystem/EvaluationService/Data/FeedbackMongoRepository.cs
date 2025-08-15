@@ -63,5 +63,23 @@ namespace EvaluationService.Data
             var filter = Builders<FeedbackDto>.Filter.Eq(f => f.WorkId, id);
             await _collection.ReplaceOneAsync(filter, updatedFeedback);
         }
+
+        // EvaluationService/FeedbackMongoRepository.cs
+        public async Task<int> DeleteManyByStudentIdAsync(Guid studentId)
+        {
+            var filter = Builders<FeedbackDto>.Filter.Eq(x => x.StudentId, studentId);
+            var res = await _collection.DeleteManyAsync(filter);
+            return (int)res.DeletedCount;
+        }
+
+        public async Task<bool> DeleteAsync(Guid workId)
+        {
+            var filter = Builders<FeedbackDto>.Filter.Eq(x => x.WorkId, workId);
+            var res = await _collection.DeleteOneAsync(filter);
+            return res.DeletedCount > 0;
+        }
+
+        public async Task<List<FeedbackDto>> GetByStudentIdAsync(Guid studentId)
+         => await _collection.Find(f => f.StudentId == studentId).ToListAsync();
     }
 }

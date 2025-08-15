@@ -63,4 +63,13 @@ public class SubmissionMongoRepository : ISubmissionRepository
         );
         return _collection.CountDocumentsAsync(filter).ContinueWith(t => (int)t.Result);
     }
+
+    // SubmissionService/SubmissionMongoRepository.cs
+    public async Task<int> DeleteManyByStudentIdAsync(Guid studentId)
+    {
+        var filter = Builders<SubmittedWork>.Filter.Eq(x => x.StudentId, studentId);
+        var res = await _collection.DeleteManyAsync(filter);
+        return (int)res.DeletedCount;
+    }
+
 }

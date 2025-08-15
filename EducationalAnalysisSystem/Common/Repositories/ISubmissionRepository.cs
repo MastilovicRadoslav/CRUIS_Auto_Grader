@@ -12,6 +12,8 @@ namespace Common.Repositories
         Task DeleteByIdAsync(Guid id);
         Task UpdateStatusByIdAsync(Guid id, WorkStatus newStatus);
         Task<int> CountByStudentSinceAsync(Guid studentId, DateTime sinceUtc);
+        Task<int> DeleteManyByStudentIdAsync(Guid studentId);
+
 
     }
 }

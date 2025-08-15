@@ -23,5 +23,9 @@ namespace Common.Interfaces
 
         [OperationContract]
         Task<SubmittedWork?> GetWorkByIdAsync(Guid workId); // Dobavljanje rada
+
+        [OperationContract]
+        Task<int> DeleteByStudentIdAsync(Guid studentId);
+
     }
 }

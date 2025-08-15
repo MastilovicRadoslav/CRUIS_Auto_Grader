@@ -138,6 +138,19 @@ public class EvaluationController : ControllerBase
         return Ok(stats);
     }
 
+    [Authorize]
+    [AuthorizeRole("Professor")]
+    [HttpPost("reports/performance")]
+    public async Task<IActionResult> GetPerformanceReport([FromBody] ReportFilterRequest request) // Testirano, funkcija koja na osnovu Data-Range dava statistiku ili za sve studente ili za jednog studenta
+    {
+        var svc = ServiceProxy.Create<IEvaluationService>(
+            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+            new ServicePartitionKey(0)
+        );
+        var stats = await svc.GetStatisticsByFiltersAsync(request);
+        return Ok(stats);
+    }
+
     [HttpPost("notify-progress-change")]
     public async Task<IActionResult> NotifyProgressChange([FromBody] ProgressUpdateDto progress) // SignalR za statistiku studenta na osnovu Feedback-a
     {
@@ -163,16 +176,5 @@ public class EvaluationController : ControllerBase
         return Ok(feedback);
     }
 
-    [Authorize]
-    [AuthorizeRole("Professor")]
-    [HttpPost("reports/performance")]
-    public async Task<IActionResult> GetPerformanceReport([FromBody] ReportFilterRequest request) // Testirano, funkcija koja na osnovu Data-Range dava statistiku ili za sve studente ili za jednog studenta
-    {
-        var svc = ServiceProxy.Create<IEvaluationService>(
-            new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
-            new ServicePartitionKey(0)
-        );
-        var stats = await svc.GetStatisticsByFiltersAsync(request);
-        return Ok(stats);
-    }
+
 }

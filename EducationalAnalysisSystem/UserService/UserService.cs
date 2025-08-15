@@ -4,10 +4,13 @@ using Common.Helpers;
 using Common.Interfaces;
 using Common.Models;
 using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
+using System.Net.Http.Json;
 using System.Text.Json;
 using UserService.Data;
 
@@ -221,7 +224,7 @@ namespace UserService
                 return OperationResult<Guid>.Ok(newUser.Id);
             }
         }
-        public async Task<OperationResult<bool>> DeleteUserAsync(Guid userId) // Testirano radi
+        public async Task<OperationResult<bool>> DeleteUserAsync(Guid userId)
         {
             var users = await StateManager.GetOrAddAsync<IReliableDictionary<Guid, User>>("users");
 
@@ -231,13 +234,49 @@ namespace UserService
                 if (!exists)
                     return OperationResult<bool>.Fail("User not found.");
 
+                // 1) kaskadno brisanje
+                try
+                {
+                    var submissionSvc = ServiceProxy.Create<ISubmissionService>(
+                        new Uri("fabric:/EducationalAnalysisSystem/SubmissionService"),
+                        new ServicePartitionKey(0)
+                    );
+                    var evaluationSvc = ServiceProxy.Create<IEvaluationService>(
+                        new Uri("fabric:/EducationalAnalysisSystem/EvaluationService"),
+                        new ServicePartitionKey(0)
+                    );
+
+                    await Task.WhenAll(
+                        submissionSvc.DeleteByStudentIdAsync(userId),
+                        evaluationSvc.DeleteFeedbacksByStudentIdAsync(userId)
+                    );
+                }
+                catch (Exception ex)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this.Context, "Cascade delete failed: " + ex.Message);
+                }
+
+                // 2) obriši usera
                 await users.TryRemoveAsync(tx, userId);
                 await _mongoRepo.DeleteByIdAsync(userId);
                 await tx.CommitAsync();
-
-                return OperationResult<bool>.Ok(true);
             }
+
+            // 3) SignalR notifikacija preko WebApi
+            try
+            {
+                using var http = new HttpClient();
+                await http.PostAsJsonAsync("http://localhost:8285/api/admin/notify-student-purged", userId);
+            }
+            catch (Exception ex)
+            {
+                ServiceEventSource.Current.ServiceMessage(this.Context, "SignalR user purge notify failed: " + ex.Message);
+            }
+
+            return OperationResult<bool>.Ok(true);
         }
+
+
 
         public async Task<OperationResult<bool>> UpdateUserAsync(Guid userId, UpdateUserRequest request) // Testirano radi
         {
