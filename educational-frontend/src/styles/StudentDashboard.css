@@ -29,6 +29,7 @@
 
 .sd-submit-btn {
   /* zadrži default AntD stil; možeš dodati suptilan hover ako želiš */
+  margin-left: 20px;
 }
 
 /* Kartice/lista */
@@ -98,4 +99,18 @@
   .sd-right {
     min-width: 0;
   }
+}
+
+/* drži visinu i kada je prazno */
+.student-dashboard {
+  min-height: calc(100dvh - 64px);
+}
+
+/* kada nema desnog stuba, smanji “gap” i centriraj empty card malo bolje */
+.sd-single {
+  gap: 1.25rem;
+}
+
+.sd-emptywrap .ant-empty {
+  padding: 24px 0;
 }

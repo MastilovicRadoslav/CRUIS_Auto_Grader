@@ -80,7 +80,7 @@ const ProfessorDashboard = () => {
   }, [studentOptions, selectedStudentId]);
 
   useSignalR(
-    // status promjena
+    // StatusChanged
     (data) => {
       setSubmissions((prev) => {
         const found = prev.find((s) => s.id === data.workId);
@@ -110,13 +110,29 @@ const ProfessorDashboard = () => {
         ];
       });
     },
-    // auto refresh napretka izabranog studenta
+
+    // ProgressUpdated
     async (updatedStudentId) => {
       if (selectedStudentId === ALL_KEY || updatedStudentId === selectedStudentId) {
         setRefreshKey((k) => k + 1);
       }
+    },
+
+    // StudentPurged
+    async (purgedStudentId) => {
+      // ukloni sve radove tog studenta iz liste
+      setSubmissions((prev) => prev.filter((s) => s.studentId !== purgedStudentId));
+
+      // ako je trenutno selektovan baš taj student -> prebaci na ALL
+      if (selectedStudentId === purgedStudentId) {
+        setSelectedStudentId(ALL_KEY);
+      }
+
+      // triggeruj ponovno učitavanje statistike (StudentProgressPanel useEffect sluša refreshKey)
+      setRefreshKey((k) => k + 1);
     }
   );
+
 
   const filteredSubmissions = submissions.filter((item) => {
     const name = (item.studentName || "").toLowerCase();

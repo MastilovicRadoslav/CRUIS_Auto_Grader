@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchMySubmissions } from "../services/submissionService";
 import { List, Card, Typography, Spin, message, Button } from "antd";
@@ -19,71 +19,91 @@ const StudentDashboard = () => {
   const [selectedWorkId, setSelectedWorkId] = useState(null);
   const [progress, setProgress] = useState(null);
 
+  const loadSubmissions = useCallback(async () => {
+    try {
+      const data = await fetchMySubmissions(token);
+      setSubmissions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      message.error("Failed to load your submissions.");
+    }
+  }, [token]);
+
+  const loadProgress = useCallback(async () => {
+    try {
+      const data = await fetchStudentProgress(userId, token);
+      setProgress(data || null);
+    } catch (err) {
+      message.error("Failed to load your progress statistics.");
+    }
+  }, [userId, token]);
+
   useEffect(() => {
-    const loadSubmissions = async () => {
-      try {
-        const data = await fetchMySubmissions(token);
-        setSubmissions(data);
-      } catch (err) {
-        message.error("Failed to load your submissions.");
-      } finally {
-        setLoading(false);
-      }
+    const run = async () => {
+      setLoading(true);
+      await Promise.all([loadSubmissions(), loadProgress()]);
+      setLoading(false);
     };
+    if (token) run();
+  }, [token, userId, loadSubmissions, loadProgress]);
 
-    const loadProgress = async () => {
-      try {
-        const data = await fetchStudentProgress(userId, token);
-        setProgress(data);
-      } catch (err) {
-        message.error("Failed to load your progress statistics.");
-      }
-    };
-
-    loadSubmissions();
-    loadProgress();
-  }, [token]); // ostavljeno kao i kod tebe da ne mijenjamo ponašanje
+  // helper: detekcija "brisanja" iz različitih payload varijanti
+  const isDeletedEvent = (data) =>
+    data?.deleted === true ||
+    data?.action === "Deleted" ||
+    data?.newStatus === "Deleted" ||
+    data?.newStatus === 4; // ako koristite enum
 
   useSignalR(
-    (data) => {
+    async (data) => {
+      if (isDeletedEvent(data)) {
+        await Promise.all([loadSubmissions(), loadProgress()]);
+        return;
+      }
       setSubmissions((prev) => {
         const found = prev.find((s) => s.id === data.workId);
         if (found) {
           return prev.map((s) =>
             s.id === data.workId
               ? {
-                  ...s,
-                  status: data.newStatus,
-                  estimatedAnalysisTime: data.estimatedAnalysisTime,
-                  submittedAt: data.submittedAt,
-                }
+                ...s,
+                title: data.title ?? s.title,
+                status: data.newStatus ?? s.status,
+                estimatedAnalysisTime: data.estimatedAnalysisTime ?? s.estimatedAnalysisTime,
+                submittedAt: data.submittedAt ?? s.submittedAt,
+              }
               : s
           );
-        } else {
-          return [
-            {
-              id: data.workId,
-              title: data.title,
-              status: data.newStatus,
-              estimatedAnalysisTime: data.estimatedAnalysisTime,
-              submittedAt: data.submittedAt,
-            },
-            ...prev,
-          ];
         }
+        return [
+          {
+            id: data.workId,
+            title: data.title,
+            status: data.newStatus,
+            estimatedAnalysisTime: data.estimatedAnalysisTime,
+            submittedAt: data.submittedAt,
+          },
+          ...prev,
+        ];
       });
     },
     async (updatedStudentId) => {
       if (updatedStudentId === userId) {
         try {
           const updatedProgress = await fetchStudentProgress(userId, token);
-          setProgress(updatedProgress);
+          setProgress(updatedProgress || { totalWorks: 0, gradeTimeline: [] });
         } catch {
           message.warning("Couldn't refresh progress stats");
         }
       }
+    },
+    async (purgedStudentId) => {
+      if (purgedStudentId === userId) {
+        setSubmissions([]);
+        setProgress({ totalWorks: 0, gradeTimeline: [] });
+      }
     }
   );
+
 
   if (loading) {
     return (
@@ -122,12 +142,22 @@ const StudentDashboard = () => {
     }
   };
 
+  const hasStats = !!progress && Number(progress?.totalWorks) > 0;
+  const hasChart =
+    hasStats &&
+    Array.isArray(progress?.gradeTimeline) &&
+    progress.gradeTimeline.length > 0;
+
   return (
     <div className="student-dashboard">
       <div className="sd-left">
         <div className="sd-header">
           <Title level={2} className="sd-title">My Submissions</Title>
-          <Button type="primary" onClick={() => setIsModalOpen(true)} className="sd-submit-btn">
+          <Button
+            type="primary"
+            onClick={() => setIsModalOpen(true)}
+            className="sd-submit-btn"
+          >
             Submit New Work
           </Button>
         </div>
@@ -172,24 +202,41 @@ const StudentDashboard = () => {
       </div>
 
       <div className="sd-right">
-        {progress && (
-          <Card title="📊 Your Progress Statistics" className="sd-stats-card">
-            <p className="sd-row"><strong>Total Works:</strong> {progress.totalWorks}</p>
-            <p className="sd-row"><strong>Average Grade:</strong> {progress.averageGrade}</p>
-            <p className="sd-row"><strong>Above 9:</strong> {progress.above9}</p>
-            <p className="sd-row"><strong>Between 7 and 8:</strong> {progress.between7And8}</p>
-            <p className="sd-row"><strong>Below 7:</strong> {progress.below7}</p>
-          </Card>
-        )}
-        {progress && (
-          <Card title="📈 Grade Evolution Over Time" className="sd-chart-card">
+        <Card title="📊 Your Progress Statistics" className="sd-stats-card">
+          {hasStats ? (
+            <>
+              <p className="sd-row"><strong>Total Works:</strong> {progress.totalWorks}</p>
+              <p className="sd-row"><strong>Average Grade:</strong> {progress.averageGrade}</p>
+              <p className="sd-row"><strong>Above 9:</strong> {progress.above9}</p>
+              <p className="sd-row"><strong>Between 7 and 8:</strong> {progress.between7And8}</p>
+              <p className="sd-row"><strong>Below 7:</strong> {progress.below7}</p>
+            </>
+          ) : (
+            <div className="sd-row" style={{ opacity: 0.7 }}>No stats yet.</div>
+          )}
+        </Card>
+
+        <Card title="📈 Grade Evolution Over Time" className="sd-chart-card">
+          {hasChart ? (
             <ProgressChart data={progress} />
-          </Card>
-        )}
+          ) : (
+            <div style={{ opacity: 0.7 }}>No data for chart.</div>
+          )}
+        </Card>
       </div>
 
-      <SubmitWorkModal visible={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <FeedbackModal visible={!!selectedWorkId} workId={selectedWorkId} onClose={() => setSelectedWorkId(null)} />
+      <SubmitWorkModal
+        visible={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={async () => {
+          await Promise.all([loadSubmissions(), loadProgress()]);
+        }}
+      />
+      <FeedbackModal
+        visible={!!selectedWorkId}
+        workId={selectedWorkId}
+        onClose={() => setSelectedWorkId(null)}
+      />
     </div>
   );
 };

@@ -2,11 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>EduAnalyzer</title>
+
+    <!-- UX/OS integrations -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#001529" />
+    <meta
+      name="description"
+      content="EduAnalyzer — submit, analyze, and track student work with clear feedback and progress."
+    />
+
+    <!-- Favicon (SVG data URL) -->
+    <!-- Light mode: tamna pozadina sa bijelom kapom -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: light)"
+      href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="%23001529"/><path fill="%23ffffff" d="M12 3 2 9l10 6 8-4.364V17h2V9L12 3z"/><path fill="%23ffffff" d="M5 12v4.5C5 18.6 12 21 12 21s7-2.4 7-4.5V12l-7 3.273L5 12z"/></svg>'
+    />
+    <!-- Dark mode: svijetla pozadina sa tamnom kapom -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: dark)"
+      href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="%23f5f7fb"/><path fill="%23001529" d="M12 3 2 9l10 6 8-4.364V17h2V9L12 3z"/><path fill="%23001529" d="M5 12v4.5C5 18.6 12 21 12 21s7-2.4 7-4.5V12l-7 3.273L5 12z"/></svg>'
+    />
+
+    <!-- Safari pinned tab (mask-icon) – koristi se samo oblik; boja dolje -->
+    <link
+      rel="mask-icon"
+      color="#001529"
+      href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23000000" d="M12 3 2 9l10 6 8-4.364V17h2V9L12 3z"/><path fill="%23000000" d="M5 12v4.5C5 18.6 12 21 12 21s7-2.4 7-4.5V12l-7 3.273L5 12z"/></svg>'
+    />
   </head>
   <body>
+    <noscript>
+      <strong>EduAnalyzer requires JavaScript to run. Please enable JavaScript.</strong>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
