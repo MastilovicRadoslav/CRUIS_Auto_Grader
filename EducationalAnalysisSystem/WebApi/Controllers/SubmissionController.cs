@@ -1,7 +1,6 @@
 ﻿using Common.DTOs;
 using Common.Enums;
 using Common.Interfaces;
-using Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;

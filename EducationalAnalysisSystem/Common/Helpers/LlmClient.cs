@@ -9,7 +9,7 @@ namespace Common.Helpers
 {
     public static class LlmClient
     {
-        private static readonly string apiKey = "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";
+        private static readonly string apiKey = "";
         private static readonly string groqUrl = "https://api.groq.com/openai/v1/chat/completions";
         private static readonly string model = "meta-llama/llama-4-scout-17b-16e-instruct";
 
@@ -22,8 +22,8 @@ namespace Common.Helpers
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
             var rangeText = settings != null
-                ? $"Grade MUST be an integer in the range [{settings.MinGrade}-{settings.MaxGrade}]."
-                : "Grade MUST be an integer in the range [1-10].";
+                ? $"Grade MUST be an int in the range [{settings.MinGrade}-{settings.MaxGrade}]."
+                : "Grade MUST be an int in the range [1-10].";
 
             var methodsText = (settings != null && settings.Methods?.Count > 0)
                 ? $"Use the following analysis methods/criteria (adapt as applicable): {string.Join(", ", settings.Methods)}."
@@ -31,8 +31,20 @@ namespace Common.Helpers
 
             var instr = string.IsNullOrWhiteSpace(additionalInstructions) ? "" : $" Additional instructions: {additionalInstructions}";
 
-            var userContent = $@"Return ONLY valid JSON with EXACTLY these fields: - Grade (int), - IdentifiedErrors (list of strings), - ImprovementSuggestions (list of strings), - FurtherRecommendations (list of strings).
-            {rangeText} {methodsText}{instr} Analyze the following educational work: {content}";
+            var userContent = $@"
+            Respond ONLY with valid JSON. 
+            DO NOT include any text before or after the JSON. 
+            DO NOT wrap in code fences. 
+            The JSON MUST contain EXACTLY these fields:
+            - Grade (int)
+            - IdentifiedErrors (list of strings)
+            - ImprovementSuggestions (list of strings)
+            - FurtherRecommendations (list of strings)
+            {rangeText} 
+            {methodsText}{instr} 
+
+            Analyze the following educational work: 
+            {content}";
 
             var requestBody = new
             {
