@@ -1,0 +1,7 @@
+Artificial Intelligence (AI) is developing faster than most people expected. It is already used in medicine, transportation, finance, and education. However, the rapid progress of AI also raises a series of ethical dilemmas that society must resolve as soon as possible.
+One of the main questions is responsibility. If an autonomous car causes an accident, who is to blame – the programmer, the manufacturer, or the AI itself? Legal systems are not yet ready to deal with such cases.
+Another issue is bias. AI systems are trained on large datasets, but if these datasets contain prejudice, the AI will repeat and even amplify them. There are already cases where AI tools for hiring candidates favored men over women or discriminated against certain ethnic groups.
+Privacy is also under threat. With facial recognition systems and big data analysis, it is possible to track almost every step of an individual. While this can improve security, it also opens the door to authoritarian control and mass surveillance.
+Finally, there is the fear of job loss. Many professions will be automated, which means millions of people could lose their source of income. The question is how society will adapt – will it create new jobs, introduce universal basic income, or allow inequality to grow?
+In conclusion, AI is not just a technical question but also a moral one. If humanity wants to enjoy the benefits of AI, it must create clear ethical rules that will protect people and ensure fairness. Otherwise, technology could become more dangerous than useful.
+
