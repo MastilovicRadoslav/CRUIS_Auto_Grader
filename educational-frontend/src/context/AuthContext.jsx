@@ -11,6 +11,8 @@ export const AuthProvider = ({ children }) => {
     username: null,
   });
 
+  const [hydrated, setHydrated] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
@@ -20,9 +22,9 @@ export const AuthProvider = ({ children }) => {
     if (token && userId && role) {
       setAuthState({ token, userId, role, username: username || null });
     }
+    setHydrated(true);
   }, []);
 
-  // username je 4. argument
   const login = (token, userId, role, username) => {
     localStorage.setItem("token", token);
     localStorage.setItem("userId", userId);
@@ -49,6 +51,7 @@ export const AuthProvider = ({ children }) => {
         role: authState.role,
         username: authState.username,
         isAuthenticated: !!authState.token,
+        hydrated,           // <-- NOVO
         login,
         logout,
       }}

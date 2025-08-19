@@ -1,34 +1,75 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+// App.jsx
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 import { Layout } from "antd";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Navbar />
-        <Layout style={{ marginTop: 64, minHeight: "100vh", backgroundColor: "#f0f2f5" }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px" }}>
-            <Routes>
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/student" element={<StudentDashboard />} />
-              <Route path="/professor" element={ <ProfessorDashboard /> }/>
-              <Route path="/admin" element={ <AdminDashboard /> }/>
+    <Router>
+      <Navbar />
+      <Layout style={{ marginTop: 64, minHeight: "100vh", backgroundColor: "#dde1e8ff" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px" }}>
+          <Routes>
+            {/* Landing -> preusmjeri na /login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-              {/* Ostale rute za profesora i admina dolaze kasnije */}
-            </Routes>
-          </div>
-        </Layout>
-      </Router>
-    </AuthProvider>
+            {/* Javne rute */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <RegisterPage />
+                </PublicRoute>
+              }
+            />
+
+            {/* Zaštićene rute po ulogama */}
+            <Route
+              path="/student"
+              element={
+                <ProtectedRoute allowedRoles={["Student"]}>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/professor"
+              element={
+                <ProtectedRoute allowedRoles={["Professor"]}>
+                  <ProfessorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["Admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </div>
+      </Layout>
+    </Router>
   );
 }
 

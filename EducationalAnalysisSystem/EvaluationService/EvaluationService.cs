@@ -339,7 +339,7 @@ namespace EvaluationService
                     Grade = 0,
                     IdentifiedErrors = new List<string> { "Analysis failed." },
                     ImprovementSuggestions = new List<string> { "Try again later." },
-                    FurtherRecommendations = new List<string> { "Consult a professor for detailed analysis." }
+                    FurtherRecommendations = new List<string> { "Please consult a professor or teaching assistant for manual review." }
                 };
             }
 
