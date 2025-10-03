@@ -1,7 +1,7 @@
 # 🎓 CRUIS Auto Grader
 
 CRUIS Auto Grader je distribuirani sistem za **automatsku analizu i
-ocenjivanje edukativnih radova** (eseja, projekata, koda).\
+ocenjivanje edukativnih radova** (eseja, projekata, koda).
 Sistem koristi **mikroservisnu arhitekturu** implementiranu u
 **Microsoft Service Fabric** i podržava više korisničkih rola:
 **Student**, **Profesor**, i **Administrator**.
