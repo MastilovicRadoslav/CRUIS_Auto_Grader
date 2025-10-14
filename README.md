@@ -163,7 +163,7 @@ cd CRUIS_Auto_Grader
 ### 3. Frontend (React + Vite)
 
 ``` bash
-cd frontend
+cd educational-frontend
 npm install
 npm run dev
 ```
