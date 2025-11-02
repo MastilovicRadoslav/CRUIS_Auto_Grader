@@ -23,7 +23,7 @@ Sistem koristi **mikroservisnu arhitekturu** implementiranu u
     -   Pregled i dodavanje **feedback-a u modalu** (detalji o radu +
         komentari)
     -   Ponovna analiza rada uz dodatne instrukcije
-    -   Pregled radova po statusu (Rejected,Pending, InProgress, Completed)
+    -   Pregled radova po statusu (Rejected, Pending, InProgress, Completed)
     -   Praćenje napretka svakog studenta kroz dashboard
 -   🛠 **Administrator**:
     -   Upravljanje korisnicima (kreiranje, izmena, brisanje, uloge)
@@ -52,7 +52,7 @@ Sistem koristi **mikroservisnu arhitekturu** sa sledećim servisima:
 2.  **SubmissionService** (Stateful)
     -   Upravljanje predajama radova
     -   Čuvanje radova u MongoDB (sa istorijom verzija)
-    -   Statusi rada: `Pending`, `InProgress`, `Completed`, `Reejcted`
+    -   Statusi rada: `Pending`, `InProgress`, `Completed`, `Rejcted`
     -   Integracija sa EvaluationService za automatsku analizu
     -   Podrška za više formata fajlova (`txt`, `pdf`, `docx`, `zip`,
         `cs`, `cpp`, `py`, ...)
